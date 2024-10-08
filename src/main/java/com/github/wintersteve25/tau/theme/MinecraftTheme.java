@@ -19,8 +19,8 @@ import java.util.Optional;
 public class MinecraftTheme implements Theme {
     public static final Theme INSTANCE = new MinecraftTheme();
 
-    private static final ResourceLocation TEXTURE = new ResourceLocation(Tau.MOD_ID, "textures/gui/container.png");
-    private static final ResourceLocation SLOT_TEXTURE = new ResourceLocation(Tau.MOD_ID, "textures/gui/slot.png");
+    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(Tau.MOD_ID, "textures/gui/container.png");
+    private static final ResourceLocation SLOT_TEXTURE = ResourceLocation.fromNamespaceAndPath(Tau.MOD_ID, "textures/gui/slot.png");
     private static final Color TEXT = new Color(0xFFE8E8E8);
 
     @Override
