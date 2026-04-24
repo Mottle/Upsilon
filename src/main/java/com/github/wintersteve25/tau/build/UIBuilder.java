@@ -56,17 +56,23 @@ public class UIBuilder {
     }
 
     /**
-     * Rebuilds all dynamic components that requires rebuilding
+     * Ticks dynamic components and reports whether the owning renderer should rebuild the full UI tree.
      * @param dynamicUIComponents All dynamic components
      */
-    public static void rebuildAndTickDynamicUIComponents(List<DynamicUIComponent> dynamicUIComponents) {
+    public static boolean tickDynamicUIComponents(List<DynamicUIComponent> dynamicUIComponents) {
+        boolean needsRebuild = false;
+
         for (DynamicUIComponent dynamicUIComponent : dynamicUIComponents) {
             dynamicUIComponent.tick();
+            needsRebuild |= dynamicUIComponent.dirty;
         }
 
-        for (DynamicUIComponent component : new ArrayList<>(dynamicUIComponents)) {
-            if (component.dirty) component.rebuildImmediately();
-            component.dirty = false;
+        if (needsRebuild) {
+            for (DynamicUIComponent component : new ArrayList<>(dynamicUIComponents)) {
+                component.dirty = false;
+            }
         }
+
+        return needsRebuild;
     }
 }

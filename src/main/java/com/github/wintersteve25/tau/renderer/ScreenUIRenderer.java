@@ -46,28 +46,38 @@ public class ScreenUIRenderer extends Screen {
 
     @Override
     protected void init() {
+        rebuildUi();
+        built = true;
+    }
+
+    private void rebuildUi() {
         Layout layout = new Layout(width, height);
 
+        clearDynamicComponents();
         components.clear();
         tooltips.clear();
         dynamicUIComponents.clear();
         List<GuiEventListener> listeners = new ArrayList<>(children());
         UIBuilder.build(layout, theme, uiComponent, new BuildContext(components, tooltips, dynamicUIComponents, listeners, new ArrayList<>()));
+    }
 
-        built = true;
+    private void clearDynamicComponents() {
+        for (DynamicUIComponent dynamicUIComponent : dynamicUIComponents) {
+            dynamicUIComponent.destroy();
+        }
     }
 
     @Override
     public void tick() {
         if (!built) return;
-        UIBuilder.rebuildAndTickDynamicUIComponents(dynamicUIComponents);
+        if (UIBuilder.tickDynamicUIComponents(dynamicUIComponents)) {
+            rebuildUi();
+        }
     }
 
     @Override
     public void onClose() {
-        for (DynamicUIComponent dynamicUIComponent : dynamicUIComponents) {
-            dynamicUIComponent.destroy();
-        }
+        clearDynamicComponents();
 
         super.onClose();
     }

@@ -38,6 +38,7 @@ public class HudUIRenderer {
     private void init() {
         Layout layout = new Layout(screenWidth, screenHeight);
 
+        clearDynamicComponents();
         components.clear();
         dynamicUIComponents.clear();
         UIBuilder.build(layout, theme, uiComponent, new BuildContext(components, new ArrayList<>(), dynamicUIComponents, new ArrayList<>(), new ArrayList<>()));
@@ -45,9 +46,17 @@ public class HudUIRenderer {
         built = true;
     }
 
+    private void clearDynamicComponents() {
+        for (DynamicUIComponent dynamicUIComponent : dynamicUIComponents) {
+            dynamicUIComponent.destroy();
+        }
+    }
+
     public void tick() {
         if (!built) return;
-        UIBuilder.rebuildAndTickDynamicUIComponents(dynamicUIComponents);
+        if (UIBuilder.tickDynamicUIComponents(dynamicUIComponents)) {
+            init();
+        }
     }
 
     public void render(Window mainWindow, GuiGraphics graphics, float pPartialTicks) {

@@ -41,6 +41,11 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
 
     @Override
     protected void init() {
+        rebuildUi();
+        built = true;
+    }
+
+    private void rebuildUi() {
         Layout layout = new Layout(uiMenu.getSize().x, uiMenu.getSize().y);
         leftPos = uiMenu.getLeftPos(layout, width, height);
         topPos = uiMenu.getTopPos(layout, width, height);
@@ -48,17 +53,22 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
         layout.pushOffset(Axis.HORIZONTAL, leftPos);
         layout.pushOffset(Axis.VERTICAL, topPos);
 
+        clearDynamicComponents();
         components.clear();
         tooltips.clear();
         dynamicUIComponents.clear();
 
         List<GuiEventListener> listeners = new ArrayList<>(children());
         UIBuilder.build(layout, theme, uiMenu.build(layout, theme, getMenu()), new BuildContext(components, tooltips, dynamicUIComponents, listeners, new ArrayList<>()));
-        
+
         layout.popOffset(Axis.HORIZONTAL);
         layout.popOffset(Axis.VERTICAL);
+    }
 
-        built = true;
+    private void clearDynamicComponents() {
+        for (DynamicUIComponent dynamicUIComponent : dynamicUIComponents) {
+            dynamicUIComponent.destroy();
+        }
     }
 
     @Override
@@ -89,15 +99,15 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
     @Override
     public void containerTick() {
         if (!built) return;
-        UIBuilder.rebuildAndTickDynamicUIComponents(dynamicUIComponents);
+        if (UIBuilder.tickDynamicUIComponents(dynamicUIComponents)) {
+            rebuildUi();
+        }
         uiMenu.tick(menu);
     }
 
     @Override
     public void onClose() {
-        for (DynamicUIComponent dynamicUIComponent : dynamicUIComponents) {
-            dynamicUIComponent.destroy();
-        }
+        clearDynamicComponents();
 
         super.onClose();
     }
