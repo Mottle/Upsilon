@@ -9,10 +9,14 @@ public class Transformation {
 
     protected final Matrix4f transform;
     protected final Matrix4f inverted;
+    private final Vector3f translation;
+    private final boolean translationOnly;
 
-    protected Transformation(Matrix4f transform, Matrix4f inverted) {
+    protected Transformation(Matrix4f transform, Matrix4f inverted, Vector3f translation, boolean translationOnly) {
         this.transform = transform;
         this.inverted = inverted;
+        this.translation = translation;
+        this.translationOnly = translationOnly;
     }
 
     public void transform(PoseStack poseStack) {
@@ -36,13 +40,21 @@ public class Transformation {
         pos.y = transformedPos.y;
     }
 
+    public boolean isTranslationOnly() {
+        return translationOnly;
+    }
+
+    public Vector3f getTranslation() {
+        return translation == null ? new Vector3f() : new Vector3f(translation);
+    }
+
     public static Transformation scale(Vector3f scale) {
         Matrix4f matrix4f = new Matrix4f().identity().scale(scale);
-        return new Transformation(matrix4f, new Matrix4f(matrix4f).invert());
+        return new Transformation(matrix4f, new Matrix4f(matrix4f).invert(), null, false);
     }
 
     public static Transformation translate(Vector3f translation) {
         Matrix4f matrix4f = new Matrix4f().identity().translation(translation);
-        return new Transformation(matrix4f, new Matrix4f(matrix4f).invert());
+        return new Transformation(matrix4f, new Matrix4f(matrix4f).invert(), new Vector3f(translation), true);
     }
 }

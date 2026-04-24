@@ -1,7 +1,9 @@
 package com.github.wintersteve25.tau.components.render;
 
+import com.github.wintersteve25.tau.Tau;
 import com.github.wintersteve25.tau.build.BuildContext;
 import com.github.wintersteve25.tau.menu.MenuSlot;
+import com.github.wintersteve25.tau.layout.Axis;
 import com.github.wintersteve25.tau.theme.Theme;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
@@ -15,6 +17,7 @@ import com.github.wintersteve25.tau.utils.SimpleVec2i;
 import com.github.wintersteve25.tau.utils.Transformation;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2d;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,6 +45,20 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
 
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
+        List<Transformation> visualOnlyTransforms = new ArrayList<>();
+        Vector3f translation = new Vector3f();
+
+        for (Transformation transformation : transformations) {
+            if (transformation.isTranslationOnly()) {
+                translation.add(transformation.getTranslation());
+            } else {
+                visualOnlyTransforms.add(transformation);
+            }
+        }
+
+        if (!visualOnlyTransforms.isEmpty()) {
+            Tau.LOGGER.warn("Transform only guarantees correct layout/input for translation transforms; applying non-translation transforms as visual-only best effort");
+        }
 
         List<Renderable> children = new ArrayList<>();
         List<MenuSlot<?>> slots = new ArrayList<>();
@@ -49,27 +66,35 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
         childrenEventListeners.clear();
         BuildContext innerContext = new BuildContext(children, context.tooltips(), context.dynamicUIComponents(), childrenEventListeners, slots);
 
-        SimpleVec2i size = UIBuilder.build(layout, theme, child, innerContext);
+        Layout transformedLayout = layout.copy();
+        transformedLayout.pushOffset(Axis.HORIZONTAL, Math.round(translation.x));
+        transformedLayout.pushOffset(Axis.VERTICAL, Math.round(translation.y));
+
+        SimpleVec2i size;
+        try {
+            size = UIBuilder.build(transformedLayout, theme, child, innerContext);
+        } finally {
+            transformedLayout.popOffset(Axis.VERTICAL);
+            transformedLayout.popOffset(Axis.HORIZONTAL);
+        }
 
         context.renderables().add((graphics, pMouseX, pMouseY, pPartialTicks) -> {
-            SimpleVec2i mousePos = new SimpleVec2i(pMouseX, pMouseY);
             PoseStack poseStack = graphics.pose();
             poseStack.pushPose();
 
-            for (Transformation transformation : transformations) {
+            for (Transformation transformation : visualOnlyTransforms) {
                 transformation.transform(poseStack);
-                transformation.transformPoint(mousePos);
             }
 
             for (Renderable renderable : children) {
-                renderable.render(graphics, mousePos.x, mousePos.y, pPartialTicks);
+                renderable.render(graphics, pMouseX, pMouseY, pPartialTicks);
             }
 
             poseStack.popPose();
         });
 
         for (MenuSlot<?> slot : slots) {
-            for (Transformation transformation : transformations) {
+            for (Transformation transformation : visualOnlyTransforms) {
                 transformation.transformPoint(slot.pos());
             }
 
@@ -110,7 +135,9 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
         Vector2d mousePos = new Vector2d(pMouseX, pMouseY);
 
         for (Transformation transformation : transformations) {
-            transformation.transformPoint(mousePos);
+            if (!transformation.isTranslationOnly()) {
+                transformation.transformPoint(mousePos);
+            }
         }
 
         return ContainerEventHandler.super.getChildAt(mousePos.x, mousePos.y);
@@ -121,7 +148,9 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
         Vector2d mousePos = new Vector2d(pMouseX, pMouseY);
 
         for (Transformation transformation : transformations) {
-            transformation.transformPoint(mousePos);
+            if (!transformation.isTranslationOnly()) {
+                transformation.transformPoint(mousePos);
+            }
         }
 
         return ContainerEventHandler.super.mouseClicked(mousePos.x, mousePos.y, pButton);
@@ -132,7 +161,9 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
         Vector2d mousePos = new Vector2d(pMouseX, pMouseY);
 
         for (Transformation transformation : transformations) {
-            transformation.transformPoint(mousePos);
+            if (!transformation.isTranslationOnly()) {
+                transformation.transformPoint(mousePos);
+            }
         }
 
         return ContainerEventHandler.super.mouseReleased(mousePos.x, mousePos.y, pButton);
@@ -143,7 +174,9 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
         Vector2d mousePos = new Vector2d(pMouseX, pMouseY);
 
         for (Transformation transformation : transformations) {
-            transformation.transformPoint(mousePos);
+            if (!transformation.isTranslationOnly()) {
+                transformation.transformPoint(mousePos);
+            }
         }
 
         return ContainerEventHandler.super.mouseDragged(mousePos.x, mousePos.y, pButton, pDragX, pDragY);
@@ -154,7 +187,9 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
         Vector2d mousePos = new Vector2d(pMouseX, pMouseY);
 
         for (Transformation transformation : transformations) {
-            transformation.transformPoint(mousePos);
+            if (!transformation.isTranslationOnly()) {
+                transformation.transformPoint(mousePos);
+            }
         }
 
         return ContainerEventHandler.super.mouseScrolled(mousePos.x, mousePos.y, pScrollX, pScrollY);

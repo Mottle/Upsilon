@@ -62,3 +62,6 @@ Temporary Items
 /src/generated/resources/.cache/
 
 .codetogether.ignore
+
+## OpenCode local workspace data
+/.opencode/
