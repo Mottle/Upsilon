@@ -34,10 +34,13 @@ public final class Row implements PrimitiveUIComponent {
 
         if (sizeBehaviour == FlexSizeBehaviour.MIN) {
             size = SimpleVec2i.zero();
+            boolean first = true;
 
             for (UIComponent child : children) {
                 SimpleVec2i childSize = UIBuilder.build(layout.copy(), theme, child, new BuildContext());
-                size.x += childSize.x + spacing;
+                if (!first) size.x += spacing;
+                first = false;
+                size.x += childSize.x;
                 size.y = Math.max(size.y, childSize.y);
             }
         } else {
@@ -47,9 +50,18 @@ public final class Row implements PrimitiveUIComponent {
         Layout childrenLayout = new Layout(size.x, size.y, layout.getPosition(Axis.HORIZONTAL, size.x), layout.getPosition(Axis.VERTICAL, size.y));
         childrenLayout.pushLayoutSetting(Axis.VERTICAL, alignment);
 
-        for (UIComponent child : children) {
-            SimpleVec2i childSize = UIBuilder.build(childrenLayout, theme, child, context);
-            childrenLayout.pushOffset(Axis.HORIZONTAL, childSize.x + spacing);
+        int pushedOffsets = 0;
+        try {
+            for (UIComponent child : children) {
+                SimpleVec2i childSize = UIBuilder.build(childrenLayout, theme, child, context);
+                childrenLayout.pushOffset(Axis.HORIZONTAL, childSize.x + spacing);
+                pushedOffsets++;
+            }
+        } finally {
+            for (int i = 0; i < pushedOffsets; i++) {
+                childrenLayout.popOffset(Axis.HORIZONTAL);
+            }
+            childrenLayout.popLayoutSetting(Axis.VERTICAL);
         }
 
         return size;

@@ -103,6 +103,6 @@ public class Layout {
     }
 
     public Layout copy() {
-        return new Layout(getWidth(), getHeight(), this.offsets.copy(), this.sizeModification.copy(), this.layoutSettings.copy());
+        return new Layout(width, height, this.offsets.copy(), this.sizeModification.copy(), this.layoutSettings.copy());
     }
 }

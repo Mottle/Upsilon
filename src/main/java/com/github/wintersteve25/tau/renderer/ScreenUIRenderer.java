@@ -51,7 +51,8 @@ public class ScreenUIRenderer extends Screen {
         components.clear();
         tooltips.clear();
         dynamicUIComponents.clear();
-        UIBuilder.build(layout, theme, uiComponent, new BuildContext(components, tooltips, dynamicUIComponents, (List<GuiEventListener>) children(), new ArrayList<>()));
+        List<GuiEventListener> listeners = new ArrayList<>(children());
+        UIBuilder.build(layout, theme, uiComponent, new BuildContext(components, tooltips, dynamicUIComponents, listeners, new ArrayList<>()));
 
         built = true;
     }

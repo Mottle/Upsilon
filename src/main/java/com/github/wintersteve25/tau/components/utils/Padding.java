@@ -26,33 +26,32 @@ public final class Padding implements PrimitiveUIComponent {
             return UIBuilder.build(layout, theme, child, context);
         }
 
-        if (pad.left == 0 || pad.right == 0) {
-            layout.pushOffset(Axis.HORIZONTAL, pad.left - pad.right);
-        } else {
-            layout.pushOffset(Axis.HORIZONTAL, pad.left);
-            layout.pushSizeMod(Axis.HORIZONTAL, - pad.right - pad.left);
+        boolean pushedHSizeMod = false;
+        boolean pushedVSizeMod = false;
+
+        try {
+            if (pad.left == 0 || pad.right == 0) {
+                layout.pushOffset(Axis.HORIZONTAL, pad.left - pad.right);
+            } else {
+                layout.pushOffset(Axis.HORIZONTAL, pad.left);
+                layout.pushSizeMod(Axis.HORIZONTAL, - pad.right - pad.left);
+                pushedHSizeMod = true;
+            }
+
+            if (pad.top == 0 || pad.bottom == 0) {
+                layout.pushOffset(Axis.VERTICAL, pad.top - pad.bottom);
+            } else {
+                layout.pushOffset(Axis.VERTICAL, pad.top);
+                layout.pushSizeMod(Axis.VERTICAL, - pad.bottom - pad.top);
+                pushedVSizeMod = true;
+            }
+
+            return UIBuilder.build(layout, theme, child, context).addNew(pad.getSize());
+        } finally {
+            layout.popOffset(Axis.VERTICAL);
+            layout.popOffset(Axis.HORIZONTAL);
+            if (pushedVSizeMod) layout.popSizeMod(Axis.VERTICAL);
+            if (pushedHSizeMod) layout.popSizeMod(Axis.HORIZONTAL);
         }
-
-        if (pad.top == 0 || pad.bottom == 0) {
-            layout.pushOffset(Axis.VERTICAL, pad.top - pad.bottom);
-        } else {
-            layout.pushOffset(Axis.VERTICAL, pad.top);
-            layout.pushSizeMod(Axis.VERTICAL, - pad.bottom - pad.top);
-        }
-
-        SimpleVec2i size = UIBuilder.build(layout, theme, child, context);
-
-        layout.popOffset(Axis.VERTICAL);
-        layout.popOffset(Axis.HORIZONTAL);
-
-        if (pad.left != 0 && pad.right != 0) {
-            layout.popSizeMod(Axis.HORIZONTAL);
-        }
-
-        if (pad.top != 0 && pad.bottom != 0) {
-            layout.popSizeMod(Axis.VERTICAL);
-        }
-
-        return size.addNew(pad.getSize());
     }
 }

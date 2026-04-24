@@ -1,49 +1,50 @@
 package com.github.wintersteve25.tau.layout;
 
-import java.util.Stack;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 public class StackedAxialSettings<T> {
-    private final Stack<T> horizontals;
-    private final Stack<T> verticals;
+    private final Deque<T> horizontals;
+    private final Deque<T> verticals;
 
     public StackedAxialSettings() {
-        horizontals = new Stack<>();
-        verticals = new Stack<>();
+        horizontals = new ArrayDeque<>();
+        verticals = new ArrayDeque<>();
     }
 
-    private StackedAxialSettings(Stack<T> horizontals, Stack<T> verticals) {
+    private StackedAxialSettings(Deque<T> horizontals, Deque<T> verticals) {
         this.horizontals = horizontals;
         this.verticals = verticals;
     }
 
     public T getLast(Axis axis) {
-        if (axis == Axis.VERTICAL) return verticals.lastElement();
-        return horizontals.lastElement();
+        if (axis == Axis.VERTICAL) return verticals.peekLast();
+        return horizontals.peekLast();
     }
-    
-    public Stack<T> get(Axis axis) {
+
+    public Deque<T> get(Axis axis) {
         return axis == Axis.VERTICAL ? verticals : horizontals;
     }
-    
+
     public void push(Axis axis, T setting) {
         if (axis == Axis.VERTICAL) {
-            verticals.push(setting);
+            verticals.addLast(setting);
             return;
         }
 
-        horizontals.push(setting);
+        horizontals.addLast(setting);
     }
 
     public void pop(Axis axis) {
         if (axis == Axis.VERTICAL) {
-            verticals.pop();
+            verticals.removeLast();
             return;
         }
 
-        horizontals.pop();
+        horizontals.removeLast();
     }
 
     public StackedAxialSettings<T> copy() {
-        return new StackedAxialSettings<>((Stack<T>) horizontals.clone(), (Stack<T>) verticals.clone());
+        return new StackedAxialSettings<>(new ArrayDeque<>(horizontals), new ArrayDeque<>(verticals));
     }
 }

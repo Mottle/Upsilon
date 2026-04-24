@@ -12,7 +12,6 @@ import com.github.wintersteve25.tau.components.base.PrimitiveUIComponent;
 import com.github.wintersteve25.tau.layout.Layout;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
 
-import javax.transaction.xa.Xid;
 import java.util.List;
 
 public final class Texture implements PrimitiveUIComponent {

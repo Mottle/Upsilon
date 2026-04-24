@@ -20,7 +20,6 @@ import net.minecraft.network.chat.FormattedText;
 
 public final class Text implements PrimitiveUIComponent, RenderProvider {
 
-    private static int ellipsisWidth = 0;
     private static final String ellipsisText = "...";
 
     private final FormattedText text;
@@ -35,11 +34,13 @@ public final class Text implements PrimitiveUIComponent, RenderProvider {
 
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
-        color = color == null ? theme.getTextColor() : color;
+        if (color == null) {
+            color = theme.getTextColor();
+        }
 
         Font fontRenderer = Minecraft.getInstance().font;
         int width = fontRenderer.width(text);
-        ellipsisWidth = fontRenderer.width(ellipsisText);
+        int ellipsisWidth = fontRenderer.width(ellipsisText);
 
         boolean willOverflow = width > layout.getWidth();
         if (willOverflow) {
@@ -54,8 +55,9 @@ public final class Text implements PrimitiveUIComponent, RenderProvider {
         int y = layout.getPosition(Axis.VERTICAL, height);
 
         int finalWidth = width;
+        Color finalColor = color;
         if (overflowBehaviour != OverflowBehaviour.CLIP) {
-            context.renderables().add((graphics, pMouseX, pMouseY, pPartialTicks) -> render(graphics, pMouseX, pMouseY, pPartialTicks, x, y, finalWidth, height));
+            context.renderables().add((graphics, pMouseX, pMouseY, pPartialTicks) -> render(graphics, pMouseX, pMouseY, pPartialTicks, x, y, finalWidth, height, finalColor, ellipsisWidth));
         } else {
             UIBuilder.build(
                     new Layout(width, height, x, y),
@@ -70,12 +72,16 @@ public final class Text implements PrimitiveUIComponent, RenderProvider {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks, int x, int y, int width, int height) {
+        render(graphics, mouseX, mouseY, partialTicks, x, y, width, height, color, Minecraft.getInstance().font.width(ellipsisText));
+    }
+
+    private void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks, int x, int y, int width, int height, Color renderColor, int ellipsisWidth) {
         Font font = Minecraft.getInstance().font;
 
         switch (overflowBehaviour) {
-            case WRAP -> graphics.drawWordWrap(font, text, x, y, width, color.getAARRGGBB());
-            case ELLIPSIS -> graphics.drawString(font, font.substrByWidth(text, width - ellipsisWidth).getString() + ellipsisText, x, y, color.getAARRGGBB(), true);
-            default -> graphics.drawString(font, text.getString(), x, y, color.getAARRGGBB(), true);
+            case WRAP -> graphics.drawWordWrap(font, text, x, y, width, renderColor.getAARRGGBB());
+            case ELLIPSIS -> graphics.drawString(font, font.substrByWidth(text, width - ellipsisWidth).getString() + ellipsisText, x, y, renderColor.getAARRGGBB(), true);
+            default -> graphics.drawString(font, text.getString(), x, y, renderColor.getAARRGGBB(), true);
         }
     }
 
@@ -86,7 +92,6 @@ public final class Text implements PrimitiveUIComponent, RenderProvider {
 
         public Builder(Component text) {
             this.text = text;
-            this.color = Color.WHITE;
         }
 
         public Builder(String text) {
@@ -113,7 +118,11 @@ public final class Text implements PrimitiveUIComponent, RenderProvider {
 
         @Override
         public UIComponent build(Layout layout, Theme theme) {
-            return build();
+            return new Text(
+                    text,
+                    color == null ? theme.getTextColor() : color,
+                    overflowBehaviour == null ? OverflowBehaviour.OVERFLOW : overflowBehaviour
+            );
         }
     }
 

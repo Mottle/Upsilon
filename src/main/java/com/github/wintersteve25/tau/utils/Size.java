@@ -27,11 +27,10 @@ public interface Size {
     }
 
     static Size staticSize(SimpleVec2i size) {
-        return s -> size;
+        return s -> new SimpleVec2i(size.x, size.y);
     }
 
     static Size staticSize(int width, int height) {
-        SimpleVec2i size = new SimpleVec2i(width, height);
-        return s -> size;
+        return s -> new SimpleVec2i(width, height);
     }
 }

@@ -24,25 +24,25 @@ public final class Align implements PrimitiveUIComponent {
 
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
+        boolean pushedH = false;
+        boolean pushedV = false;
+
         if (horizontal != null) {
             layout.pushLayoutSetting(Axis.HORIZONTAL, horizontal);
+            pushedH = true;
         }
 
         if (vertical != null) {
             layout.pushLayoutSetting(Axis.VERTICAL, vertical);
+            pushedV = true;
         }
 
-        SimpleVec2i size = UIBuilder.build(layout, theme, child, context);
-
-        if (horizontal != null) {
-            layout.popLayoutSetting(Axis.HORIZONTAL);
+        try {
+            return UIBuilder.build(layout, theme, child, context);
+        } finally {
+            if (pushedV) layout.popLayoutSetting(Axis.VERTICAL);
+            if (pushedH) layout.popLayoutSetting(Axis.HORIZONTAL);
         }
-
-        if (vertical != null) {
-            layout.popLayoutSetting(Axis.VERTICAL);
-        }
-
-        return size;
     }
 
 

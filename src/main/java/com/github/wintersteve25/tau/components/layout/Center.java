@@ -23,11 +23,11 @@ public final class Center implements PrimitiveUIComponent {
         layout.pushLayoutSetting(Axis.HORIZONTAL, LayoutSetting.CENTER);
         layout.pushLayoutSetting(Axis.VERTICAL, LayoutSetting.CENTER);
 
-        SimpleVec2i size = UIBuilder.build(layout, theme, child, context);
-
-        layout.popLayoutSetting(Axis.HORIZONTAL);
-        layout.popLayoutSetting(Axis.VERTICAL);
-
-        return size;
+        try {
+            return UIBuilder.build(layout, theme, child, context);
+        } finally {
+            layout.popLayoutSetting(Axis.VERTICAL);
+            layout.popLayoutSetting(Axis.HORIZONTAL);
+        }
     }
 }

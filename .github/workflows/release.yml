@@ -1,8 +1,8 @@
-name: Build and Release for 1.20
+name: Build and Release for 1.21.1
 
 on:
   push:
-    branches: [ 1.20-release ]
+    branches: [ 1.21-release ]
 
 jobs:
   build:
@@ -30,7 +30,7 @@ jobs:
           files-primary: "./build/libs/*.jar"
           changelog-file: "./CHANGELOG.md"
 
-          loaders: forge
+          loaders: neoforge
           game-versions: |
-            1.20.6
+            1.21.1
           java: 21

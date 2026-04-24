@@ -46,7 +46,7 @@ public final class Button implements PrimitiveUIComponent, GuiEventListener {
 
     @Override
     public boolean mouseClicked(double pMouseX, double pMouseY, int pButton) {
-        if (onPress != null && isHovered((int) pMouseX, (int) pMouseY)) {
+        if (pButton == 0 && onPress != null && isHovered((int) pMouseX, (int) pMouseY)) {
             onPress.accept(pButton);
             ClientSoundHelper.playButtonClick();
             return true;

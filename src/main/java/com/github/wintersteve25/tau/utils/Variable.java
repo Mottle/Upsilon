@@ -17,7 +17,6 @@ public class Variable<T> {
     }
 
     public T getValue() {
-        changedSince = false;
         return value;
     }
 
@@ -25,10 +24,9 @@ public class Variable<T> {
         if (this.value == null && value == null) {
             return;
         }
-        
-        if (this.value != null) {
-            if (this.value == value) return;
-            if (this.value.equals(value)) return;
+
+        if (this.value != null && this.value.equals(value)) {
+            return;
         }
 
         this.value = value;

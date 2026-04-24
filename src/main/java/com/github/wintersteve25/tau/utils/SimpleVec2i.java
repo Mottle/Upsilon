@@ -27,10 +27,10 @@ public class SimpleVec2i {
     }
 
     public static boolean within(int mouseX, int mouseY, SimpleVec2i position, SimpleVec2i size) {
-        return mouseX > position.x && mouseX < position.x + size.x && mouseY > position.y && mouseY < position.y + size.y;
+        return mouseX >= position.x && mouseX <= position.x + size.x && mouseY >= position.y && mouseY <= position.y + size.y;
     }
 
     public static boolean within(int mouseX, int mouseY, int x, int y, int width, int height) {
-        return mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height;
+        return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
     }
 }

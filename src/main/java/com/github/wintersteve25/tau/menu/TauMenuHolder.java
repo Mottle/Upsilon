@@ -18,12 +18,12 @@ import java.util.function.Supplier;
 
 public class TauMenuHolder {
 
-    private final Supplier<UIMenu> menu;
+    private final UIMenu menu;
     private DeferredHolder<MenuType<?>, MenuType<TauContainerMenu>> inner;
 
     public TauMenuHolder(DeferredRegister<MenuType<?>> register, Supplier<UIMenu> menu, String name, FeatureFlagSet featureFlagSet) {
-        this.menu = menu;
-        setup(menu.get(), register, name, featureFlagSet);
+        this.menu = menu.get();
+        setup(this.menu, register, name, featureFlagSet);
     }
 
     private void setup(UIMenu menu, DeferredRegister<MenuType<?>> register, String name, FeatureFlagSet set) {
@@ -35,7 +35,7 @@ public class TauMenuHolder {
     }
 
     public UIMenu getMenu() {
-        return menu.get();
+        return menu;
     }
     
     public void openMenu(ServerPlayer player, BlockPos pos) {

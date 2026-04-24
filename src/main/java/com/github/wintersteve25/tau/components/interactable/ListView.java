@@ -36,8 +36,6 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
     private SimpleVec2i size;
     private SimpleVec2i position;
 
-    private boolean focus;
-
     public ListView(List<UIComponent> children, LayoutSetting childrenAlignment, int spacing) {
         this.children = children;
         this.childrenAlignment = childrenAlignment;
@@ -90,12 +88,11 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
 
     @Override
     public void setFocused(boolean pFocused) {
-        focus = pFocused;
     }
 
     @Override
     public boolean isFocused() {
-        return focus;
+        return false;
     }
 
     private int clamp(int x, int min, int max) {

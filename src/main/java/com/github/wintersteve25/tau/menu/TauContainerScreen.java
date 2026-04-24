@@ -52,7 +52,8 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
         tooltips.clear();
         dynamicUIComponents.clear();
 
-        UIBuilder.build(layout, theme, uiMenu.build(layout, theme, getMenu()), new BuildContext(components, tooltips, dynamicUIComponents, (List<GuiEventListener>) children(), new ArrayList<>()));
+        List<GuiEventListener> listeners = new ArrayList<>(children());
+        UIBuilder.build(layout, theme, uiMenu.build(layout, theme, getMenu()), new BuildContext(components, tooltips, dynamicUIComponents, listeners, new ArrayList<>()));
         
         layout.popOffset(Axis.HORIZONTAL);
         layout.popOffset(Axis.VERTICAL);
