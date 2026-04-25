@@ -7,8 +7,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
+/**
+ * Legacy fixed-width string formatter with left/center/right alignment modes.
+ */
 public class StringAlignUtils extends Format {
 
+    /**
+     * Alignment modes for formatted output blocks.
+     */
     public enum Alignment {
         LEFT, CENTER, RIGHT,
     }
@@ -16,6 +22,9 @@ public class StringAlignUtils extends Format {
     private final Alignment currentAlignment;
     private final int maxChars;
 
+    /**
+     * Creates an align formatter.
+     */
     public StringAlignUtils(int maxChars, Alignment align) {
         switch (align) {
             case LEFT:
@@ -32,6 +41,10 @@ public class StringAlignUtils extends Format {
         this.maxChars = maxChars;
     }
 
+    /**
+     * Formats text into fixed-width lines using the configured alignment.
+     */
+    @Override
     public StringBuffer format(Object input, StringBuffer where, FieldPosition ignore)
     {
         String s = input.toString();
@@ -72,10 +85,15 @@ public class StringAlignUtils extends Format {
             to.append(' ');
     }
 
+    /** Convenience formatter returning a plain string. */
     public String format(String s) {
         return format(s, new StringBuffer(), null).toString();
     }
 
+    /**
+     * Parsing is not supported; returns source unchanged.
+     */
+    @Override
     public Object parseObject(String source, ParsePosition pos) {
         return source;
     }

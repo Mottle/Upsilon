@@ -8,16 +8,25 @@ import com.github.wintersteve25.tau.layout.Layout;
 import com.github.wintersteve25.tau.theme.Theme;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
 
+/**
+ * Conditional wrapper that builds its child only when condition is true.
+ */
 public class If implements PrimitiveUIComponent {
 
     private final boolean condition;
     private final UIComponent child;
 
+    /**
+     * Creates a conditional component.
+     */
     public If(boolean condition, UIComponent child) {
         this.condition = condition;
         this.child = child;
     }
 
+    /**
+     * Builds child only when condition is true, otherwise returns zero size.
+     */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
         if (condition) return UIBuilder.build(layout, theme, child, context);

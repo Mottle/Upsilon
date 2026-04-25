@@ -25,6 +25,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Scrollable vertical list container with clipping and input forwarding.
+ * <p>
+ * The component caches measured content height per viewport size and updates
+ * scroll offset without requesting a full dynamic rebuild on each wheel event.
+ */
 public final class ListView extends DynamicUIComponent implements PrimitiveUIComponent, ContainerEventHandler {
 
     private static final int scrollSensitivity = 8;
@@ -42,6 +48,13 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
     private int measuredContentHeight = -1;
     private SimpleVec2i measuredViewport = SimpleVec2i.zero();
 
+    /**
+     * Creates a list view.
+     *
+     * @param children list entries rendered top-to-bottom
+     * @param childrenAlignment horizontal alignment for each child row
+     * @param spacing vertical spacing between entries
+     */
     public ListView(List<UIComponent> children, LayoutSetting childrenAlignment, int spacing) {
         this.children = children;
         this.childrenAlignment = childrenAlignment;
@@ -49,6 +62,9 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
         scrollOffset = 0;
     }
 
+    /**
+     * Builds the list view, measures content height, and wires clipped rendering.
+     */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
         size = layout.getSize();
@@ -108,6 +124,9 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
         return size;
     }
 
+    /**
+     * Applies wheel scrolling when cursor is inside the viewport.
+     */
     @Override
     public boolean mouseScrolled(double pMouseX, double pMouseY, double pScrollX, double pScrollY) {
         if (!isMouseOver(pMouseX, pMouseY)) {
@@ -128,64 +147,103 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
         return true;
     }
 
+    /**
+     * Returns whether a position lies inside the list viewport.
+     */
     @Override
     public boolean isMouseOver(double pMouseX, double pMouseY) {
         return SimpleVec2i.within((int) pMouseX, (int) pMouseY, position, size);
     }
 
+    /**
+     * List view does not track a focused state directly.
+     */
     @Override
     public void setFocused(boolean pFocused) {
     }
 
+    /**
+     * Returns false because focus is delegated to children.
+     */
     @Override
     public boolean isFocused() {
         return false;
     }
 
+    /**
+     * Returns the event listeners built for the current child subtree.
+     */
     @Override
     public List<? extends GuiEventListener> children() {
         return childEventListeners;
     }
 
+    /**
+     * List view does not keep a direct focused child reference.
+     */
     @Nullable
     @Override
     public GuiEventListener getFocused() {
         return null;
     }
 
+    /**
+     * List view does not keep its own focused child reference.
+     */
     @Override
     public void setFocused(@Nullable GuiEventListener pFocused) {
     }
 
+    /**
+     * Resolves child under mouse after compensating for scroll offset.
+     */
     @Override
     public Optional<GuiEventListener> getChildAt(double pMouseX, double pMouseY) {
         return ContainerEventHandler.super.getChildAt(pMouseX, pMouseY - scrollOffset);
     }
 
+    /**
+     * Drag state is not tracked by this container.
+     */
     @Override
     public boolean isDragging() {
         return false;
     }
 
+    /**
+     * Drag state setter is a no-op for this container.
+     */
     @Override
     public void setDragging(boolean pIsDragging) {
     }
 
+    /**
+     * Forwards clicks to children after applying scroll offset.
+     */
     @Override
     public boolean mouseClicked(double pMouseX, double pMouseY, int pButton) {
         return ContainerEventHandler.super.mouseClicked(pMouseX, pMouseY - scrollOffset, pButton);
     }
 
+    /**
+     * Forwards releases to children after applying scroll offset.
+     */
     @Override
     public boolean mouseReleased(double pMouseX, double pMouseY, int pButton) {
         return ContainerEventHandler.super.mouseReleased(pMouseX, pMouseY - scrollOffset, pButton);
     }
 
+    /**
+     * Forwards drags to children after applying scroll offset.
+     */
     @Override
     public boolean mouseDragged(double pMouseX, double pMouseY, int pButton, double pDragX, double pDragY) {
         return ContainerEventHandler.super.mouseDragged(pMouseX, pMouseY - scrollOffset, pButton, pDragX, pDragY);
     }
 
+    /**
+     * Renders child content inside a scissor region.
+     */
     private void renderClipped(GuiGraphics graphics, List<Renderable> childRenderables, int glX, int glY, int glWidth, int glHeight, int mouseX, int mouseY, float partialTicks) {
         RenderSystem.enableScissor(glX, glY, glWidth, glHeight);
 
@@ -198,6 +256,9 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
         }
     }
 
+    /**
+     * Clamps an integer value to an inclusive range.
+     */
     private int clamp(int x, int min, int max) {
         if (x < min) {
             return min;
@@ -210,23 +271,36 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
         private int spacing;
         private LayoutSetting childrenAlignment;
 
+        /** Creates a new list view builder. */
         public Builder() {
         }
 
+        /**
+        * Sets vertical spacing between list children.
+        */
         public Builder withSpacing(int spacing) {
             this.spacing = spacing;
             return this;
         }
 
+        /**
+         * Sets horizontal alignment applied to list children.
+         */
         public Builder withAlignment(LayoutSetting alignment) {
             childrenAlignment = alignment;
             return this;
         }
 
+        /**
+         * Builds a list view from vararg children.
+         */
         public ListView build(UIComponent... children) {
             return build(Arrays.asList(children));
         }
 
+        /**
+         * Builds a list view from iterable children.
+         */
         public ListView build(List<UIComponent> children) {
             return new ListView(children, childrenAlignment == null ? LayoutSetting.CENTER : childrenAlignment, spacing);
         }

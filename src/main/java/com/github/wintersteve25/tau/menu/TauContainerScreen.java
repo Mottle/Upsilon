@@ -17,6 +17,9 @@ import net.minecraft.world.entity.player.Inventory;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Container screen that renders a {@link UIMenu} through the component build pipeline.
+ */
 public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu> implements MenuAccess<TauContainerMenu> {
 
     private final UIMenu uiMenu;
@@ -29,6 +32,9 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
 
     private boolean built;
 
+    /**
+     * Creates a container screen wrapper for a {@link UIMenu}.
+     */
     public TauContainerScreen(TauContainerMenu pMenu, Inventory pPlayerInventory, UIMenu uiMenu, boolean renderBackground, Theme theme, Component title) {
         super(pMenu, pPlayerInventory, title);
         this.uiMenu = uiMenu;
@@ -45,6 +51,9 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
         built = true;
     }
 
+    /**
+     * Rebuilds renderables/tooltips/dynamic component lists for the current menu state.
+     */
     private void rebuildUi() {
         Layout layout = new Layout(uiMenu.getSize().x, uiMenu.getSize().y);
         leftPos = uiMenu.getLeftPos(layout, width, height);
@@ -65,6 +74,9 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
         layout.popOffset(Axis.VERTICAL);
     }
 
+    /**
+     * Invokes destroy hooks on all currently tracked dynamic components.
+     */
     private void clearDynamicComponents() {
         for (DynamicUIComponent dynamicUIComponent : dynamicUIComponents) {
             dynamicUIComponent.destroy();
@@ -82,6 +94,9 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
         }
     }
 
+    /**
+     * Renders vanilla container layer then Upsilon tooltip renderables.
+     */
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
@@ -96,6 +111,9 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
     }
 
+    /**
+     * Ticks dynamic UI state and rebuilds when requested.
+     */
     @Override
     public void containerTick() {
         if (!built) return;
@@ -105,6 +123,9 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
         uiMenu.tick(menu);
     }
 
+    /**
+     * Destroys tracked dynamic components before closing.
+     */
     @Override
     public void onClose() {
         clearDynamicComponents();

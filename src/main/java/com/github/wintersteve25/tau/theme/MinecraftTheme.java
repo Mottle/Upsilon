@@ -16,38 +16,59 @@ import org.joml.Vector2ic;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Default vanilla-like theme implementation for Upsilon components.
+ */
 public class MinecraftTheme implements Theme {
+    /** Shared singleton instance of the default theme. */
     public static final Theme INSTANCE = new MinecraftTheme();
 
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(Upsilon.MOD_ID, "textures/gui/container.png");
     private static final ResourceLocation SLOT_TEXTURE = ResourceLocation.fromNamespaceAndPath(Upsilon.MOD_ID, "textures/gui/slot.png");
     private static final Color TEXT = new Color(0xFFE8E8E8);
 
+    /**
+     * Draws a vanilla-styled button in the requested interaction state.
+     */
     @Override
     public void drawButton(GuiGraphics graphics, int x, int y, int width, int height, float partialTicks, int mouseX, int mouseY, InteractableState state) {
         graphics.blitWithBorder(TEXTURE, x, y, 0, 166 + state.getNumber() * 20, width, height, 200, 20, 2, 3, 2, 2);
     }
 
+    /**
+     * Draws a vanilla-like panel/container background.
+     */
     @Override
     public void drawContainer(GuiGraphics graphics, int x, int y, int width, int height, float partialTicks, int mouseX, int mouseY) {
         graphics.blitWithBorder(TEXTURE, x, y, 0, 0, width, height, 176, 166, 4);
     }
 
+    /**
+     * Draws a scrollbar; default theme currently leaves this as no-op.
+     */
     @Override
     public void drawScrollbar(GuiGraphics graphics, int x, int y, int width, int height, float partialTicks, int mouseX, int mouseY) {
     }
 
+    /**
+     * Draws a tooltip with optional custom positioning.
+     */
     @Override
     public void drawTooltip(GuiGraphics graphics, int mouseX, int mouseY, Font font, List<ClientTooltipComponent> tooltips, Optional<ClientTooltipPositioner> positioner) {
         renderTooltipInternal(graphics, font, tooltips, mouseX, mouseY, positioner.orElse(this::positionTooltip));
     }
 
+    /**
+     * Draws themed slot background.
+     */
     @Override
     public void drawSlot(GuiGraphics graphics, int x, int y) {
         graphics.blit(SLOT_TEXTURE, x, y, 0, 0, 18, 18, 18, 18);
     }
 
-    // Copied from GuiGraphics
+    /**
+     * Renders tooltip content using vanilla tooltip pipeline hooks.
+     */
     private void renderTooltipInternal(GuiGraphics graphics, Font pFont, List<ClientTooltipComponent> pComponents, int pMouseX, int pMouseY, ClientTooltipPositioner pTooltipPositioner) {
         if (!pComponents.isEmpty()) {
             net.neoforged.neoforge.client.event.RenderTooltipEvent.Pre preEvent = net.neoforged.neoforge.client.ClientHooks.onRenderTooltipPre(ItemStack.EMPTY, graphics, pMouseX, pMouseY, graphics.guiWidth(), graphics.guiHeight(), pComponents, pFont, pTooltipPositioner);
@@ -94,12 +115,18 @@ public class MinecraftTheme implements Theme {
         }
     }
 
+    /**
+     * Computes default tooltip anchor from mouse position.
+     */
     private Vector2ic positionTooltip(int screenWidth, int screenHeight, int pMouseX, int pMouseY, int pWidth, int pHeight) {
         Vector2i vector2i = (new Vector2i(pMouseX, pMouseY)).add(12, -12);
         this.positionTooltip(screenWidth, screenHeight, vector2i, pWidth, pHeight);
         return vector2i;
     }
 
+    /**
+     * Clamps tooltip position to remain inside screen bounds.
+     */
     private void positionTooltip(int screenWidth, int screenHeight, Vector2i pPosition, int pWidth, int pHeight) {
         if (pPosition.x + pWidth > screenWidth) {
             pPosition.x = Math.max(pPosition.x - 24 - pWidth, 4);
@@ -111,6 +138,9 @@ public class MinecraftTheme implements Theme {
         }
     }
 
+    /**
+     * Returns default text color used by this theme.
+     */
     @Override
     public Color getTextColor() {
         return TEXT;

@@ -8,15 +8,24 @@ import com.github.wintersteve25.tau.layout.Layout;
 import com.github.wintersteve25.tau.build.UIBuilder;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
 
+/**
+ * Places a child at an explicit absolute position in parent space.
+ */
 public final class Positioned implements PrimitiveUIComponent {
     private final SimpleVec2i position;
     private final UIComponent child;
 
+    /**
+     * Creates a positioned wrapper.
+     */
     public Positioned(SimpleVec2i position, UIComponent child) {
         this.position = position;
         this.child = child;
     }
 
+    /**
+     * Builds child in a layout anchored at the explicit absolute position.
+     */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
         Layout childLayout = new Layout(layout.getWidth(), layout.getHeight(), position.x, position.y);

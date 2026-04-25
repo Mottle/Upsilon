@@ -16,18 +16,31 @@ import com.github.wintersteve25.tau.utils.SimpleVec2i;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Scissor-clip wrapper for a child component subtree.
+ */
 public final class Clip implements PrimitiveUIComponent {
 
     private final UIComponent child;
     private final SimpleVec2i offset;
     private final Size size;
 
+    /**
+     * Creates a clip component.
+     *
+     * @param child wrapped child component
+     * @param offset clip origin offset from child position
+     * @param size clip rectangle size policy
+     */
     public Clip(UIComponent child, SimpleVec2i offset, Size size) {
         this.child = child;
         this.offset = offset;
         this.size = size;
     }
 
+    /**
+     * Builds child subtree and renders it inside a scissor rectangle.
+     */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
 
@@ -65,19 +78,23 @@ public final class Clip implements PrimitiveUIComponent {
         private SimpleVec2i offset;
         private Size size;
 
+        /** Creates a new clip builder. */
         public Builder() {
         }
 
+        /** Sets clip origin offset relative to child position. */
         public Builder withOffset(SimpleVec2i offset) {
             this.offset = offset;
             return this;
         }
 
+        /** Sets clip size policy. */
         public Builder withSize(Size size) {
             this.size = size;
             return this;
         }
 
+        /** Builds a clip wrapper around the given child. */
         public Clip build(UIComponent child) {
             return new Clip(child, offset == null ? SimpleVec2i.zero() : offset, size == null ? Size.percentage(1f) : size);
         }

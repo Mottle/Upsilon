@@ -14,6 +14,9 @@ import com.github.wintersteve25.tau.utils.SimpleVec2i;
 
 import java.util.List;
 
+/**
+ * Primitive textured quad component.
+ */
 public final class Texture implements PrimitiveUIComponent {
 
     private final ResourceLocation textureLocation;
@@ -22,6 +25,15 @@ public final class Texture implements PrimitiveUIComponent {
     private final SimpleVec2i uvSize;
     private final SimpleVec2i size;
 
+    /**
+     * Creates a texture component.
+     *
+     * @param textureLocation texture atlas/resource location
+     * @param textureSize full texture dimensions in pixels
+     * @param uv top-left UV origin in texture pixels
+     * @param uvSize sampled UV size in texture pixels
+     * @param size rendered quad size in screen pixels
+     */
     public Texture(ResourceLocation textureLocation, SimpleVec2i textureSize, SimpleVec2i uv, SimpleVec2i uvSize, SimpleVec2i size) {
         this.textureLocation = textureLocation;
         this.textureSize = textureSize;
@@ -30,6 +42,9 @@ public final class Texture implements PrimitiveUIComponent {
         this.size = size;
     }
 
+    /**
+     * Registers texture blit rendering at resolved layout position.
+     */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
 
@@ -52,36 +67,47 @@ public final class Texture implements PrimitiveUIComponent {
         private SimpleVec2i uvSize;
         private SimpleVec2i size;
 
+        /**
+         * Creates a new builder for the given texture resource.
+         */
         public Builder(ResourceLocation textureLocation) {
             this.textureLocation = textureLocation;
         }
 
+        /** Sets full texture dimensions in pixels. */
         public Builder withTextureSize(SimpleVec2i textureSize) {
             this.textureSize = textureSize;
             return this;
         }
 
+        /** Sets top-left UV origin in texture pixels. */
         public Builder withUv(SimpleVec2i uv) {
             this.uv = uv;
             return this;
         }
 
+        /** Sets sampled UV size in texture pixels. */
         public Builder withUvSize(SimpleVec2i uvSize) {
             this.uvSize = uvSize;
             return this;
         }
 
+        /** Sets rendered size in screen pixels. */
         public Builder withSize(SimpleVec2i size) {
             this.size = size;
             return this;
         }
 
+        /** Builds texture component with defaults for unset values. */
         public Texture build() {
             textureSize = textureSize == null ? new SimpleVec2i(256, 256) : textureSize;
             uvSize = uvSize == null ? textureSize : uvSize;
             return new Texture(textureLocation, textureSize, uv == null ? SimpleVec2i.zero() : uv, uvSize, size == null ? uvSize : size);
         }
 
+        /**
+         * Returns a built texture component for this builder configuration.
+         */
         @Override
         public UIComponent build(Layout layout, Theme theme) {
             return build();

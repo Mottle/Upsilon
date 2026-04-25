@@ -11,12 +11,18 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Builds composed {@link UIComponent} trees into concrete render/runtime artifacts.
+ */
 public class UIBuilder {
     /**
-     * @param layout The layout of this ui component. Used to position children components
-     * @param uiComponent The ui component to build into a list of renderables
-     * @param context A build context containing the underlying renderables and such
-     * @return The size of the component
+     * Builds a UI component tree and collects renderables/listeners/slots into a context.
+     *
+     * @param layout layout constraints and positioning context for the root
+     * @param theme active theme used by primitive components
+     * @param uiComponent root component to build
+     * @param context build artifact collector
+     * @return accumulated size of the built branch
      */
     public static SimpleVec2i build(Layout layout, Theme theme, UIComponent uiComponent, BuildContext context) {
         return build(layout, theme, uiComponent, context, SimpleVec2i.zero());
@@ -57,7 +63,9 @@ public class UIBuilder {
 
     /**
      * Ticks dynamic components and reports whether the owning renderer should rebuild the full UI tree.
-     * @param dynamicUIComponents All dynamic components
+     *
+     * @param dynamicUIComponents dynamic components currently registered in the renderer
+     * @return {@code true} if any component requested rebuild via {@code DynamicUIComponent#rebuild()}
      */
     public static boolean tickDynamicUIComponents(List<DynamicUIComponent> dynamicUIComponents) {
         boolean needsRebuild = false;

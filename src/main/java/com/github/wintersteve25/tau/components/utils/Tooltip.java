@@ -20,6 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Tooltip wrapper that renders extra tooltip content when child is hovered.
+ */
 public final class Tooltip implements PrimitiveUIComponent {
 
     private final List<ClientTooltipComponent> clientComponents;
@@ -27,6 +30,14 @@ public final class Tooltip implements PrimitiveUIComponent {
     private final UIComponent child;
     private final Optional<ClientTooltipPositioner> positioner;
 
+    /**
+     * Creates a tooltip component.
+     *
+     * @param clientComponents custom prebuilt tooltip rows
+     * @param components text components converted to tooltip rows
+     * @param child wrapped child component that triggers tooltip on hover
+     * @param positioner optional tooltip position strategy
+     */
     public Tooltip(List<ClientTooltipComponent> clientComponents, List<Component> components, UIComponent child, Optional<ClientTooltipPositioner> positioner) {
         this.clientComponents = clientComponents;
         this.components = components;
@@ -34,6 +45,9 @@ public final class Tooltip implements PrimitiveUIComponent {
         this.positioner = positioner;
     }
 
+    /**
+     * Builds child and registers hover-triggered tooltip rendering.
+     */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -63,36 +77,43 @@ public final class Tooltip implements PrimitiveUIComponent {
         private final List<Component> components;
         private ClientTooltipPositioner positioner;
 
+        /** Creates a new tooltip builder. */
         public Builder() {
             clientComponents = new ArrayList<>();
             components = new ArrayList<>();
         }
 
+        /** Adds multiple prebuilt tooltip rows. */
         public Builder with(List<ClientTooltipComponent> components) {
             this.clientComponents.addAll(components);
             return this;
         }
 
+        /** Adds a single prebuilt tooltip row. */
         public Builder with(ClientTooltipComponent component) {
             this.clientComponents.add(component);
             return this;
         }
 
+        /** Adds multiple text tooltip entries. */
         public Builder withComponent(List<Component> components) {
             this.components.addAll(components);
             return this;
         }
 
+        /** Sets a custom tooltip positioner. */
         public Builder withPositioner(ClientTooltipPositioner positioner) {
             this.positioner = positioner;
             return this;
         }
 
+        /** Adds a single text tooltip entry. */
         public Builder withComponent(Component component) {
             this.components.add(component);
             return this;
         }
 
+        /** Builds a tooltip wrapper around the given child component. */
         public Tooltip build(UIComponent child) {
             return new Tooltip(clientComponents, components, child, Optional.ofNullable(positioner));
         }

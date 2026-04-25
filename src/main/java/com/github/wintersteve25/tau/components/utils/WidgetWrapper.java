@@ -8,14 +8,23 @@ import com.github.wintersteve25.tau.layout.Axis;
 import com.github.wintersteve25.tau.layout.Layout;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
 
+/**
+ * Adapts a vanilla {@link AbstractWidget} into a primitive UI component.
+ */
 public final class WidgetWrapper implements PrimitiveUIComponent {
 
     private final AbstractWidget child;
 
+    /**
+     * Creates a wrapper for a widget instance.
+     */
     public WidgetWrapper(AbstractWidget child) {
         this.child = child;
     }
 
+    /**
+     * Applies layout bounds to wrapped widget and registers it.
+     */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
         child.setWidth(layout.getWidth());

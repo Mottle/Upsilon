@@ -10,16 +10,25 @@ import com.github.wintersteve25.tau.utils.Pad;
 import com.github.wintersteve25.tau.build.UIBuilder;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
 
+/**
+ * Applies inset/outset padding around a child component.
+ */
 public final class Padding implements PrimitiveUIComponent {
 
     private final Pad pad;
     private final UIComponent child;
 
+    /**
+     * Creates a padding wrapper.
+     */
     public Padding(Pad pad, UIComponent child) {
         this.pad = pad;
         this.child = child;
     }
 
+    /**
+     * Builds child within padding-adjusted layout and returns padded size.
+     */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
         if (pad == null) {

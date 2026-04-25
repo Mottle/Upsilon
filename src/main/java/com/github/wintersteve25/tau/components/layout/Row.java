@@ -13,6 +13,9 @@ import com.github.wintersteve25.tau.utils.SimpleVec2i;
 
 import java.util.Arrays;
 
+/**
+ * Horizontal layout component that places children left-to-right.
+ */
 public final class Row implements PrimitiveUIComponent {
 
     private final Iterable<UIComponent> children;
@@ -20,6 +23,14 @@ public final class Row implements PrimitiveUIComponent {
     private final FlexSizeBehaviour sizeBehaviour;
     private final LayoutSetting alignment;
 
+    /**
+     * Creates a row layout.
+     *
+     * @param spacing horizontal spacing between children
+     * @param sizeBehaviour row width/height sizing behavior
+     * @param children child components in display order
+     * @param alignment vertical alignment applied to children
+     */
     public Row(int spacing, FlexSizeBehaviour sizeBehaviour, Iterable<UIComponent> children, LayoutSetting alignment) {
         this.children = children;
         this.spacing = spacing;
@@ -27,6 +38,9 @@ public final class Row implements PrimitiveUIComponent {
         this.alignment = alignment;
     }
 
+    /**
+     * Builds row children and returns resolved container size.
+     */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
 
@@ -73,28 +87,34 @@ public final class Row implements PrimitiveUIComponent {
         private FlexSizeBehaviour sizeBehaviour;
         private LayoutSetting alignment;
 
+        /** Creates a new row builder. */
         public Builder() {
         }
 
+        /** Sets horizontal spacing between children. */
         public Builder withSpacing(int spacing) {
             this.spacing = spacing;
             return this;
         }
 
+        /** Sets size behavior used by the row container. */
         public Builder withSizeBehaviour(FlexSizeBehaviour horizontalSizeBehaviour) {
             this.sizeBehaviour = horizontalSizeBehaviour;
             return this;
         }
 
+        /** Sets vertical alignment used for children inside the row. */
         public Builder withAlignment(LayoutSetting alignment) {
             this.alignment = alignment;
             return this;
         }
 
+        /** Builds a row from vararg children. */
         public Row build(UIComponent... children) {
             return build(Arrays.asList(children));
         }
 
+        /** Builds a row from iterable children. */
         public Row build(Iterable<UIComponent> children) {
             return new Row(spacing,
                     sizeBehaviour == null

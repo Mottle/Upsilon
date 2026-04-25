@@ -13,16 +13,28 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Utility helpers for menu-screen wiring and client-side slot discovery.
+ */
 public class TauMenuHelper {
+    /**
+     * Registers the screen factory for a previously registered menu holder.
+     */
     public static void registerMenuScreen(RegisterMenuScreensEvent event, TauMenuHolder holder) {
         event.register(holder.get(), new MenuScreens.ScreenConstructor<TauContainerMenu, TauContainerScreen>() {
+            /**
+             * Creates the client screen for a newly opened container menu.
+             */
             @Override
             public TauContainerScreen create(TauContainerMenu pMenu, Inventory pInventory, Component pTitle) {
                 return holder.getMenu().createScreen(pMenu, pInventory, pTitle);
             }
         });
     }
-    
+
+    /**
+     * Builds a menu UI on the client to collect slot descriptors and positions.
+     */
     public static List<MenuSlot<?>> buildContainerOnClient(UIMenu uiMenu, Layout layout, Theme theme, TauContainerMenu menu) {
         UIComponent uiComponent = uiMenu.build(layout, theme, menu);
         List<MenuSlot<?>> slots = new ArrayList<>();

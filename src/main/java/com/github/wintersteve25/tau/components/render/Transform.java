@@ -24,6 +24,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Component that applies render/input transformations to a child subtree.
+ * <p>
+ * Translation transforms are applied in layout space for reliable hit-testing.
+ * Non-translation transforms are rendered as visual-only best effort.
+ */
 public final class Transform implements PrimitiveUIComponent, ContainerEventHandler {
 
     private final UIComponent child;
@@ -33,16 +39,25 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
     private boolean dragging;
     private GuiEventListener focused;
 
+    /**
+     * Creates a transform wrapper from vararg transformations.
+     */
     public Transform(UIComponent child, Transformation... transformations) {
         this(child, Arrays.asList(transformations));
     }
 
+    /**
+     * Creates a transform wrapper from iterable transformations.
+     */
     public Transform(UIComponent child, Iterable<Transformation> transformations) {
         this.child = child;
         this.transformations = transformations;
         this.childrenEventListeners = new ArrayList<>();
     }
 
+    /**
+     * Builds transformed child renderables/listeners and applies visual transforms.
+     */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
         List<Transformation> visualOnlyTransforms = new ArrayList<>();
@@ -66,6 +81,7 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
         childrenEventListeners.clear();
         BuildContext innerContext = new BuildContext(children, context.tooltips(), context.dynamicUIComponents(), childrenEventListeners, slots);
 
+        // Translation participates in layout for consistent input and slot mapping.
         Layout transformedLayout = layout.copy();
         transformedLayout.pushOffset(Axis.HORIZONTAL, Math.round(translation.x));
         transformedLayout.pushOffset(Axis.VERTICAL, Math.round(translation.y));
@@ -78,6 +94,7 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
             transformedLayout.popOffset(Axis.HORIZONTAL);
         }
 
+        // Non-translation transforms are visual-only best effort.
         context.renderables().add((graphics, pMouseX, pMouseY, pPartialTicks) -> {
             PoseStack poseStack = graphics.pose();
             poseStack.pushPose();
@@ -93,6 +110,7 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
             poseStack.popPose();
         });
 
+        // Slots are adjusted only for visual-only transforms.
         for (MenuSlot<?> slot : slots) {
             for (Transformation transformation : visualOnlyTransforms) {
                 transformation.transformPoint(slot.pos());
@@ -104,32 +122,50 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
         return size;
     }
 
+    /**
+     * Returns child listeners collected during build.
+     */
     @Override
     public List<? extends GuiEventListener> children() {
         return childrenEventListeners;
     }
 
+    /**
+     * Returns whether this container is in drag state.
+     */
     @Override
     public boolean isDragging() {
         return dragging;
     }
 
+    /**
+     * Updates drag state for this container.
+     */
     @Override
     public void setDragging(boolean pIsDragging) {
         dragging = pIsDragging;
     }
 
+    /**
+     * Returns currently focused child listener.
+     */
     @Nullable
     @Override
     public GuiEventListener getFocused() {
         return focused;
     }
 
+    /**
+     * Sets focused child listener.
+     */
     @Override
     public void setFocused(@Nullable GuiEventListener pFocused) {
         focused = pFocused;
     }
 
+    /**
+     * Resolves child under mouse, accounting for visual-only transforms.
+     */
     @Override
     public Optional<GuiEventListener> getChildAt(double pMouseX, double pMouseY) {
         Vector2d mousePos = new Vector2d(pMouseX, pMouseY);
@@ -143,6 +179,9 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
         return ContainerEventHandler.super.getChildAt(mousePos.x, mousePos.y);
     }
 
+    /**
+     * Forwards click input to transformed child listeners.
+     */
     @Override
     public boolean mouseClicked(double pMouseX, double pMouseY, int pButton) {
         Vector2d mousePos = new Vector2d(pMouseX, pMouseY);
@@ -156,6 +195,9 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
         return ContainerEventHandler.super.mouseClicked(mousePos.x, mousePos.y, pButton);
     }
 
+    /**
+     * Forwards release input to transformed child listeners.
+     */
     @Override
     public boolean mouseReleased(double pMouseX, double pMouseY, int pButton) {
         Vector2d mousePos = new Vector2d(pMouseX, pMouseY);
@@ -169,6 +211,9 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
         return ContainerEventHandler.super.mouseReleased(mousePos.x, mousePos.y, pButton);
     }
 
+    /**
+     * Forwards drag input to transformed child listeners.
+     */
     @Override
     public boolean mouseDragged(double pMouseX, double pMouseY, int pButton, double pDragX, double pDragY) {
         Vector2d mousePos = new Vector2d(pMouseX, pMouseY);
@@ -182,6 +227,9 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
         return ContainerEventHandler.super.mouseDragged(mousePos.x, mousePos.y, pButton, pDragX, pDragY);
     }
 
+    /**
+     * Forwards wheel input to transformed child listeners.
+     */
     @Override
     public boolean mouseScrolled(double pMouseX, double pMouseY, double pScrollX, double pScrollY) {
         Vector2d mousePos = new Vector2d(pMouseX, pMouseY);

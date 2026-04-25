@@ -9,6 +9,9 @@ import com.github.wintersteve25.tau.utils.SimpleVec2i;
 import com.github.wintersteve25.tau.utils.Variable;
 import net.minecraft.resources.ResourceLocation;
 
+/**
+ * Texture component with mutable UV coordinates driven by {@link Variable} values.
+ */
 public class AnimatedTexture implements PrimitiveUIComponent {
 
     private final ResourceLocation textureLocation;
@@ -18,6 +21,9 @@ public class AnimatedTexture implements PrimitiveUIComponent {
     private final Variable<SimpleVec2i> uvPos;
     private final boolean stretchToSize;
 
+    /**
+     * Creates an animated texture component.
+     */
     public AnimatedTexture(ResourceLocation textureLocation, SimpleVec2i textureSize, SimpleVec2i size, Variable<SimpleVec2i> uvSize, Variable<SimpleVec2i> uvPos, boolean stretchToSize) {
         this.textureLocation = textureLocation;
         this.textureSize = textureSize;
@@ -27,6 +33,9 @@ public class AnimatedTexture implements PrimitiveUIComponent {
         this.stretchToSize = stretchToSize;
     }
 
+    /**
+     * Registers rendering that samples UVs from reactive variables each frame.
+     */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
         SimpleVec2i position = layout.getPosition(size);
@@ -58,6 +67,9 @@ public class AnimatedTexture implements PrimitiveUIComponent {
         private SimpleVec2i textureSize;
         private boolean stretchToSize;
 
+        /**
+         * Creates a builder for an animated texture.
+         */
         public Builder(ResourceLocation textureLocation, SimpleVec2i size, Variable<SimpleVec2i> uvSize, Variable<SimpleVec2i> uvPos) {
             this.textureLocation = textureLocation;
             this.uvSize = uvSize;
@@ -65,21 +77,33 @@ public class AnimatedTexture implements PrimitiveUIComponent {
             this.size = size;
         }
 
+        /**
+         * Overrides full texture atlas size.
+         */
         public Builder withTextureSize(SimpleVec2i textureSize) {
             this.textureSize = textureSize;
             return this;
         }
         
+        /**
+         * Sets whether the UV region should be stretched to component size.
+         */
         public Builder shouldStretchToSize(boolean shouldStretchToSize) {
             this.stretchToSize = shouldStretchToSize;
             return this;
         }
 
+        /**
+         * Builds the animated texture component.
+         */
         public UIComponent build() {
             textureSize = textureSize == null ? new SimpleVec2i(256, 256) : textureSize;
             return new AnimatedTexture(textureLocation, textureSize, size, uvSize, uvPos, stretchToSize);
         }
 
+        /**
+         * Returns a built animated texture for this builder state.
+         */
         @Override
         public UIComponent build(Layout layout, Theme theme) {
             return build();

@@ -14,6 +14,11 @@ import net.minecraft.client.gui.components.Renderable;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * HUD renderer for component trees rendered outside a {@link net.minecraft.client.gui.screens.Screen}.
+ * <p>
+ * Rebuilds when dynamic components request it or when HUD dimensions change.
+ */
 public class HudUIRenderer {
     private final UIComponent uiComponent;
     private final List<Renderable> components;
@@ -24,6 +29,9 @@ public class HudUIRenderer {
     private int screenWidth;
     private int screenHeight;
 
+    /**
+     * Creates a HUD renderer with an explicit theme.
+     */
     public HudUIRenderer(UIComponent uiComponent, Theme theme) {
         this.uiComponent = uiComponent;
         this.components = new ArrayList<>();
@@ -31,10 +39,16 @@ public class HudUIRenderer {
         this.theme = theme;
     }
 
+    /**
+     * Creates a HUD renderer using {@link MinecraftTheme#INSTANCE}.
+     */
     public HudUIRenderer(UIComponent uiComponent) {
         this(uiComponent, MinecraftTheme.INSTANCE);
     }
 
+    /**
+     * Rebuilds the HUD component tree for current viewport dimensions.
+     */
     private void init() {
         Layout layout = new Layout(screenWidth, screenHeight);
 
@@ -46,12 +60,18 @@ public class HudUIRenderer {
         built = true;
     }
 
+    /**
+     * Invokes destroy hooks for currently active dynamic components.
+     */
     private void clearDynamicComponents() {
         for (DynamicUIComponent dynamicUIComponent : dynamicUIComponents) {
             dynamicUIComponent.destroy();
         }
     }
 
+    /**
+     * Ticks dynamic components and rebuilds the HUD tree when required.
+     */
     public void tick() {
         if (!built) return;
         if (UIBuilder.tickDynamicUIComponents(dynamicUIComponents)) {
@@ -59,6 +79,9 @@ public class HudUIRenderer {
         }
     }
 
+    /**
+     * Renders HUD components and triggers rebuild when scaled window size changes.
+     */
     public void render(Window mainWindow, GuiGraphics graphics, float pPartialTicks) {
         int width = mainWindow.getGuiScaledWidth();
         int height = mainWindow.getGuiScaledHeight();

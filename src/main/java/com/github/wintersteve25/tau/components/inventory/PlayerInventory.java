@@ -9,15 +9,24 @@ import com.github.wintersteve25.tau.theme.Theme;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
 import com.github.wintersteve25.tau.utils.Variable;
 
+/**
+ * Primitive component that renders the player's inventory slot grid.
+ */
 public class PlayerInventory implements PrimitiveUIComponent {
 
     private final Variable<Boolean> enabled;
     private static final SimpleVec2i SIZE = new SimpleVec2i(162, 76); // 4 rows with 1 hotbar
 
+    /**
+     * Creates a player inventory component with enable/disable state.
+     */
     public PlayerInventory(Variable<Boolean> enabled) {
         this.enabled = enabled;
     }
 
+    /**
+     * Draws player inventory slots and registers their slot handler.
+     */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
 

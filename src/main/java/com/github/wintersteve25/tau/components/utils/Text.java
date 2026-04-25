@@ -18,6 +18,9 @@ import com.github.wintersteve25.tau.layout.Layout;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
 import net.minecraft.network.chat.FormattedText;
 
+/**
+ * Text render component with configurable overflow behavior.
+ */
 public final class Text implements PrimitiveUIComponent, RenderProvider {
 
     private static final String ellipsisText = "...";
@@ -26,12 +29,22 @@ public final class Text implements PrimitiveUIComponent, RenderProvider {
     private final OverflowBehaviour overflowBehaviour;
     private Color color;
 
+    /**
+     * Creates a text component.
+     *
+     * @param text formatted text content
+     * @param color explicit text color, or null to use theme color
+     * @param overflowBehaviour overflow mode
+     */
     public Text(FormattedText text, Color color, OverflowBehaviour overflowBehaviour) {
         this.text = text;
         this.color = color;
         this.overflowBehaviour = overflowBehaviour;
     }
 
+    /**
+     * Resolves text bounds and registers render operations.
+     */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
         if (color == null) {
@@ -70,6 +83,9 @@ public final class Text implements PrimitiveUIComponent, RenderProvider {
         return new SimpleVec2i(width, height);
     }
 
+    /**
+     * Renders text using current overflow mode and color.
+     */
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks, int x, int y, int width, int height) {
         render(graphics, mouseX, mouseY, partialTicks, x, y, width, height, color, Minecraft.getInstance().font.width(ellipsisText));
@@ -90,24 +106,29 @@ public final class Text implements PrimitiveUIComponent, RenderProvider {
         private Color color;
         private OverflowBehaviour overflowBehaviour;
 
+        /** Creates a builder from translatable/literal component text. */
         public Builder(Component text) {
             this.text = text;
         }
 
+        /** Creates a builder from literal string text. */
         public Builder(String text) {
             this.text = Component.literal(text);
         }
 
+        /** Sets explicit text color. */
         public Builder withColor(Color color) {
             this.color = color;
             return this;
         }
 
+        /** Sets overflow behavior for rendering. */
         public Builder withOverflowBehaviour(OverflowBehaviour overflowBehaviour) {
             this.overflowBehaviour = overflowBehaviour;
             return this;
         }
 
+        /** Builds text component with default overflow mode when unset. */
         public Text build() {
             return new Text(
                     text,
@@ -116,6 +137,9 @@ public final class Text implements PrimitiveUIComponent, RenderProvider {
             );
         }
 
+        /**
+         * Builds component instance with theme fallback for unset color.
+         */
         @Override
         public UIComponent build(Layout layout, Theme theme) {
             return new Text(
@@ -126,6 +150,9 @@ public final class Text implements PrimitiveUIComponent, RenderProvider {
         }
     }
 
+    /**
+     * Overflow handling mode for text rendering.
+     */
     public enum OverflowBehaviour {
         OVERFLOW,
         WRAP,

@@ -16,11 +16,19 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nullable;
 import java.util.function.Supplier;
 
+/**
+ * Wrapper around a {@link UIMenu} that owns its registered {@link MenuType}.
+ * <p>
+ * This class connects menu registration with runtime opening logic.
+ */
 public class TauMenuHolder {
 
     private final UIMenu menu;
     private DeferredHolder<MenuType<?>, MenuType<TauContainerMenu>> inner;
 
+    /**
+     * Creates a holder, resolves the supplied menu once, and registers its menu type.
+     */
     public TauMenuHolder(DeferredRegister<MenuType<?>> register, Supplier<UIMenu> menu, String name, FeatureFlagSet featureFlagSet) {
         this.menu = menu.get();
         setup(this.menu, register, name, featureFlagSet);
@@ -30,21 +38,36 @@ public class TauMenuHolder {
         inner = menu.registerMenuType(register, this, name, set);
     }
 
+    /**
+     * Returns the registered menu type.
+     */
     public MenuType<TauContainerMenu> get() {
         return inner.get();
     }
 
+    /**
+     * Returns the bound UI menu implementation.
+     */
     public UIMenu getMenu() {
         return menu;
     }
-    
+
+    /**
+     * Opens this menu for the given server player at a block position.
+     */
     public void openMenu(ServerPlayer player, BlockPos pos) {
         player.openMenu(new MenuProvider() {
+            /**
+             * Returns display title supplied by the bound UI menu.
+             */
             @Override
             public @NotNull Component getDisplayName() {
                 return getMenu().getTitle();
             }
 
+            /**
+             * Creates a fresh container menu instance for this open request.
+             */
             @Nullable
             @Override
             public AbstractContainerMenu createMenu(int pContainerId, Inventory pPlayerInventory, Player pPlayer) {

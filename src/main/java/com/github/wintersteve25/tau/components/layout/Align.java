@@ -10,18 +10,27 @@ import com.github.wintersteve25.tau.layout.Layout;
 import com.github.wintersteve25.tau.layout.LayoutSetting;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
 
+/**
+ * Applies temporary horizontal/vertical alignment overrides to a child.
+ */
 public final class Align implements PrimitiveUIComponent {
 
     private final UIComponent child;
     private final LayoutSetting horizontal;
     private final LayoutSetting vertical;
 
+    /**
+     * Creates an alignment wrapper.
+     */
     public Align(UIComponent child, LayoutSetting horizontal, LayoutSetting vertical) {
         this.child = child;
         this.horizontal = horizontal;
         this.vertical = vertical;
     }
 
+    /**
+     * Builds child with temporary alignment overrides applied to the layout.
+     */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
         boolean pushedH = false;
@@ -50,19 +59,23 @@ public final class Align implements PrimitiveUIComponent {
         private LayoutSetting horizontal;
         private LayoutSetting vertical;
 
+        /** Creates a new align builder. */
         public Builder() {
         }
 
+        /** Sets horizontal alignment override. */
         public Builder withHorizontal(LayoutSetting horizontal) {
             this.horizontal = horizontal;
             return this;
         }
 
+        /** Sets vertical alignment override. */
         public Builder withVertical(LayoutSetting vertical) {
             this.vertical = vertical;
             return this;
         }
 
+        /** Builds an align wrapper around the child. */
         public Align build(UIComponent child) {
             return new Align(child, horizontal, vertical);
         }

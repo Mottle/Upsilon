@@ -11,16 +11,25 @@ import com.github.wintersteve25.tau.build.UIBuilder;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
 import moe.liar.upsilon.Upsilon;
 
+/**
+ * Constrains child layout space to a resolved {@link Size}.
+ */
 public final class Sized implements PrimitiveUIComponent {
 
     private final Size size;
     private final UIComponent child;
 
+    /**
+     * Creates a sized wrapper around a child component.
+     */
     public Sized(Size size, UIComponent child) {
         this.size = size;
         this.child = child;
     }
 
+    /**
+     * Builds child in resolved size bounds and returns that resolved size.
+     */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
         SimpleVec2i componentSize = size.get(layout.getSize());

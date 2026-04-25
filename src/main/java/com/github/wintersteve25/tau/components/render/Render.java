@@ -8,13 +8,22 @@ import com.github.wintersteve25.tau.layout.Layout;
 import com.github.wintersteve25.tau.utils.RenderProvider;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
 
+/**
+ * Primitive wrapper that delegates drawing to a {@link RenderProvider}.
+ */
 public final class Render implements PrimitiveUIComponent {
     private final RenderProvider renderer;
 
+    /**
+     * Creates a render wrapper.
+     */
     public Render(RenderProvider renderer) {
         this.renderer = renderer;
     }
 
+    /**
+     * Registers delegated rendering at the resolved layout rectangle.
+     */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
         int width = layout.getWidth();

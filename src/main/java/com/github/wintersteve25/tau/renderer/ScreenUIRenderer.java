@@ -16,6 +16,11 @@ import com.github.wintersteve25.tau.layout.Layout;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Adapts a {@link UIComponent} tree into a Minecraft {@link Screen}.
+ * <p>
+ * The renderer rebuilds its full component tree when dynamic components request it.
+ */
 public class ScreenUIRenderer extends Screen {
 
     private final UIComponent uiComponent;
@@ -26,6 +31,9 @@ public class ScreenUIRenderer extends Screen {
     private final Theme theme;
     private boolean built;
 
+    /**
+     * Creates a screen renderer with explicit background and theme options.
+     */
     public ScreenUIRenderer(UIComponent uiComponent, boolean renderBackground, Theme theme) {
         super(Component.empty());
         this.uiComponent = uiComponent;
@@ -36,20 +44,32 @@ public class ScreenUIRenderer extends Screen {
         this.dynamicUIComponents = new ArrayList<>();
     }
 
+    /**
+     * Creates a screen renderer using {@link MinecraftTheme#INSTANCE}.
+     */
     public ScreenUIRenderer(UIComponent uiComponent, boolean renderBackground) {
         this(uiComponent, renderBackground, MinecraftTheme.INSTANCE);
     }
 
+    /**
+     * Creates a screen renderer that also renders the vanilla background.
+     */
     public ScreenUIRenderer(UIComponent uiComponent) {
         this(uiComponent, true);
     }
 
+    /**
+     * Builds initial UI tree for current screen size.
+     */
     @Override
     protected void init() {
         rebuildUi();
         built = true;
     }
 
+    /**
+     * Rebuilds renderables/tooltips/event listeners for current screen dimensions.
+     */
     private void rebuildUi() {
         Layout layout = new Layout(width, height);
 
@@ -61,12 +81,18 @@ public class ScreenUIRenderer extends Screen {
         UIBuilder.build(layout, theme, uiComponent, new BuildContext(components, tooltips, dynamicUIComponents, listeners, new ArrayList<>()));
     }
 
+    /**
+     * Invokes destroy hooks for currently active dynamic components.
+     */
     private void clearDynamicComponents() {
         for (DynamicUIComponent dynamicUIComponent : dynamicUIComponents) {
             dynamicUIComponent.destroy();
         }
     }
 
+    /**
+     * Ticks dynamic components and rebuilds tree when marked dirty.
+     */
     @Override
     public void tick() {
         if (!built) return;
@@ -75,6 +101,9 @@ public class ScreenUIRenderer extends Screen {
         }
     }
 
+    /**
+     * Cleans up dynamic components before closing this screen.
+     */
     @Override
     public void onClose() {
         clearDynamicComponents();
@@ -82,6 +111,9 @@ public class ScreenUIRenderer extends Screen {
         super.onClose();
     }
 
+    /**
+     * Renders screen background, component tree, and deferred tooltips.
+     */
     @Override
     public void render(GuiGraphics graphics, int pMouseX, int pMouseY, float pPartialTicks) {
         if (renderBackground) {

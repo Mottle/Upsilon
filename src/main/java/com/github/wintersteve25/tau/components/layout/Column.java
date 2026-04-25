@@ -13,6 +13,9 @@ import com.github.wintersteve25.tau.utils.SimpleVec2i;
 
 import java.util.Arrays;
 
+/**
+ * Vertical layout component that places children top-to-bottom.
+ */
 public final class Column implements PrimitiveUIComponent {
 
     private final Iterable<UIComponent> children;
@@ -20,6 +23,14 @@ public final class Column implements PrimitiveUIComponent {
     private final FlexSizeBehaviour sizeBehaviour;
     private final LayoutSetting alignment;
 
+    /**
+     * Creates a column layout.
+     *
+     * @param spacing vertical spacing between children
+     * @param sizeBehaviour column sizing behavior
+     * @param children child components in display order
+     * @param alignment horizontal alignment applied to children
+     */
     public Column(int spacing, FlexSizeBehaviour sizeBehaviour, Iterable<UIComponent> children, LayoutSetting alignment) {
         this.children = children;
         this.spacing = spacing;
@@ -27,6 +38,9 @@ public final class Column implements PrimitiveUIComponent {
         this.alignment = alignment;
     }
 
+    /**
+     * Builds column children and returns resolved container size.
+     */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
 
@@ -74,28 +88,34 @@ public final class Column implements PrimitiveUIComponent {
         private FlexSizeBehaviour sizeBehaviour;
         private LayoutSetting alignment;
 
+        /** Creates a new column builder. */
         public Builder() {
         }
 
+        /** Sets vertical spacing between children. */
         public Builder withSpacing(int spacing) {
             this.spacing = spacing;
             return this;
         }
 
+        /** Sets size behavior used by the column container. */
         public Builder withSizeBehaviour(FlexSizeBehaviour sizeBehaviour) {
             this.sizeBehaviour = sizeBehaviour;
             return this;
         }
 
+        /** Sets horizontal alignment used for children inside the column. */
         public Builder withAlignment(LayoutSetting alignment) {
             this.alignment = alignment;
             return this;
         }
 
+        /** Builds a column from vararg children. */
         public Column build(UIComponent... children) {
             return build(Arrays.asList(children));
         }
 
+        /** Builds a column from iterable children. */
         public Column build(Iterable<UIComponent> children) {
             return new Column(spacing,
                     sizeBehaviour == null

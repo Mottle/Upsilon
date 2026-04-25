@@ -8,14 +8,23 @@ import net.minecraft.world.inventory.Slot;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.SlotItemHandler;
 
+/**
+ * Slot handler that maps the player's full inventory (3 rows + hotbar).
+ */
 public class PlayerInventoryHandler implements ISlotHandler {
     
     private final Variable<Boolean> enabled;
 
+    /**
+     * Creates a player inventory slot handler.
+     */
     public PlayerInventoryHandler(Variable<Boolean> enabled) {
         this.enabled = enabled;
     }
 
+    /**
+     * Adds main inventory and hotbar slots into the target menu.
+     */
     @Override
     public void setupSync(TauContainerMenu menu, Inventory playerInv, int x, int y) {
         x += 1;
@@ -33,15 +42,22 @@ public class PlayerInventoryHandler implements ISlotHandler {
         }
     }
 
+    /** Slot implementation that can be hidden/disabled via {@link Variable}. */
     private static class DisablableSlot extends Slot {
 
         private final Variable<Boolean> enabled;
-        
+
+        /**
+         * Creates a player inventory slot with toggleable visibility.
+         */
         public DisablableSlot(Container container, int slot, int x, int y, Variable<Boolean> enabled) {
             super(container, slot, x, y);
             this.enabled = enabled;
         }
 
+        /**
+         * Returns current active state based on bound variable.
+         */
         @Override
         public boolean isActive() {
             return enabled.getValue();
