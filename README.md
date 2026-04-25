@@ -1,41 +1,95 @@
 # Upsilon
-A powerful and versatile forge UI library
-Upsilon is a UI library for Minecraft Forge that simplifies the process of creating graphical user interfaces (GUIs). It provides a Flutter-like syntax for creating and customizing the appearance of UI elements, making it easy for developers to create attractive, responsive, and functional interfaces.
 
+Upsilon is a composable UI library for Minecraft NeoForge mods.
 
-# Key Features
-- **Flutter-like Syntax**: Upsilon uses a syntax similar to that of Flutter, making it easy for developers familiar with Flutter to get started with Upsilon.
-- **Extensible**: Upsilon is designed to be extensible, allowing developers to add their own custom UI elements and widgets to the library.
-- **Easy To Use**: Upsilon is designed to be easy to use. I am personally really not a fan of the workflow that goes into making Minecraft UIs. Upsilon changes that workflow into a more organized and maintainable fashion (In my opinion).
+It provides a Flutter-like composition style for building screens, HUD overlays, and container-backed UIs with a consistent component model.
 
+## Highlights
 
-# Capabilities
-Currently, there are 2 renderers for Upsilon. They are built upon existing Minecraft UI renderers. There is one for Screen and another one for Hud. So you can use Upsilon to build Huds and various different types of screens as you need. There is currently no support for making UI for containers (as of version 1.0.0). But that is something I would like to look into.
+- Composable `UIComponent` tree model
+- Built-in layout primitives (`Column`, `Row`, `Stack`, `Center`, `Align`, `Sized`, etc.)
+- Interactive widgets (`Button`, `TextField`, `Slider`, `ListView`)
+- Runtime render targets for screen, HUD, and menu/container UIs
+- Theme abstraction (`Theme`) with default vanilla-style implementation (`MinecraftTheme`)
 
-# Example
-Here are some example code that can be used to set up a simple Upsilon UI
+## Runtime Targets
+
+Upsilon supports three main hosting modes:
+
+1. Screen UI via `ScreenUIRenderer`
+2. HUD UI via `HudUIRenderer`
+3. Container/menu UI via `UIMenu` + `TauContainerScreen`
+
+## Quick Start (Screen)
+
 ```java
-public class ExampleUI implements UIComponent {
+import com.github.wintersteve25.tau.components.base.UIComponent;
+import com.github.wintersteve25.tau.components.interactable.Button;
+import com.github.wintersteve25.tau.components.layout.Center;
+import com.github.wintersteve25.tau.components.utils.Sized;
+import com.github.wintersteve25.tau.components.utils.Text;
+import com.github.wintersteve25.tau.layout.Layout;
+import com.github.wintersteve25.tau.renderer.ScreenUIRenderer;
+import com.github.wintersteve25.tau.theme.Theme;
+import com.github.wintersteve25.tau.utils.Size;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+
+public final class ExampleScreenUI implements UIComponent {
     @Override
     public UIComponent build(Layout layout, Theme theme) {
-        return new Stack(
-            new Container.Builder().withColor(Color.WHITE),
-            new Center(new Sized(
-                Size.staticSize(new Vector2i(100, 20)),
-                new TextField.Builder()
-                    .withMessage(Component.literal("Hello"))
-                    .withHintText(Component.literal("Hello!")))
-        ));
+        return new Center(
+                new Sized(
+                        Size.staticSize(120, 20),
+                        new Button.Builder()
+                                .withOnPress(btn -> Minecraft.getInstance().player
+                                        .sendSystemMessage(Component.literal("Clicked")))
+                                .build(new Center(new Text.Builder("Click Me")))
+                )
+        );
     }
 }
 ```
 
-in this snippet, it creates a list of UI elements that stack on top of each other. In this case, an empty container filled with the color white, and a text field with the size 100(w) 20(h) centred in the middle of the screen with a narration message of "Hello" and a hint text of "Hello!"
+Open it:
 
-Lastly, This UI can be displayed onto the screen with 
 ```java
-Minecraft.getInstance().setScreen(new ScreenUIRenderer(new TestStatic()));
+Minecraft.getInstance().setScreen(new ScreenUIRenderer(new ExampleScreenUI()));
 ```
 
-# Getting Started
-You can browse the project repository [here](https://github.com/Mottle/Upsilon)
+## Build And Run
+
+Project baseline in this branch:
+
+- Minecraft `1.21.1`
+- NeoForge `21.1.20`
+- Java `21`
+
+Common commands:
+
+- Build jar: `bash gradlew build`
+- Run client: `bash gradlew runClient`
+- Run server: `bash gradlew runServer`
+- Run datagen: `bash gradlew runData`
+
+## Documentation
+
+- Usage guide: [`docs/usage.md`](docs/usage.md)
+- Architecture guide: [`docs/architecture.md`](docs/architecture.md)
+- Agent guide: [`docs/agent-guide.md`](docs/agent-guide.md)
+
+## Manual Test Screens
+
+This repository currently validates behavior manually in-game.
+
+- test hub: `src/main/java/com/github/wintersteve25/tau/tests/TestAll.java`
+
+## Project Metadata
+
+- mod id: `upsilon`
+- runtime entrypoint: `moe.liar.upsilon.Upsilon`
+- package root: `com.github.wintersteve25.tau`
+
+## License
+
+[MIT](LICENSE)
