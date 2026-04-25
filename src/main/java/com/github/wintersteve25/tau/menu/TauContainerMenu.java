@@ -1,6 +1,6 @@
 package com.github.wintersteve25.tau.menu;
 
-import com.github.wintersteve25.tau.Tau;
+import moe.liar.upsilon.Upsilon;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
@@ -52,7 +52,7 @@ public class TauContainerMenu extends AbstractContainerMenu {
 
     public void addDataSlot(String name, DataSlot slot) {
         if (dataSlots.containsKey(name)) {
-            Tau.LOGGER.error("Duplicated data slot key: " + name);
+            Upsilon.LOGGER.error("Duplicated data slot key: " + name);
             return;
         }
 
@@ -76,7 +76,7 @@ public class TauContainerMenu extends AbstractContainerMenu {
 
     public Optional<Supplier<Integer>> getGetterForDataSlot(String name) {
         if (!dataSlots.containsKey(name)) {
-            Tau.LOGGER.error("Unknown data slot key: " + name);
+            Upsilon.LOGGER.error("Unknown data slot key: " + name);
             return Optional.empty();
         }
 

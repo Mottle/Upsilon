@@ -1,12 +1,14 @@
-# AGENTS.md — Tau (Minecraft NeoForge UI Library)
+# AGENTS.md — Upsilon (Minecraft NeoForge UI Library)
 
 Compact reference for agents working in this repo.
 
 ## Project Basics
 
-- **What**: Minecraft NeoForge mod — a UI widget library ("Tau") with Flutter-like composition.
+- **What**: Minecraft NeoForge mod — a UI widget library ("Upsilon") with Flutter-like composition.
 - **MC version**: 1.21.1, **NeoForge**: 21.1.20, **Java**: 21.
 - **Package root**: `com.github.wintersteve25.tau`
+- **Mod entrypoint**: `moe.liar.upsilon.Upsilon`
+- **Runtime mod id / resource namespace**: `upsilon`
 - **Build tool**: Gradle (NeoGradle userdev plugin `7.0.152`).
 
 ## Build & Run

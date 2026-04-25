@@ -1,6 +1,6 @@
 package com.github.wintersteve25.tau.tests;
 
-import com.github.wintersteve25.tau.Tau;
+import moe.liar.upsilon.Upsilon;
 import com.github.wintersteve25.tau.components.layout.Center;
 import com.github.wintersteve25.tau.components.utils.Sized;
 import com.github.wintersteve25.tau.components.interactable.TextField;
@@ -18,7 +18,7 @@ public class TestTextField implements UIComponent {
                 Size.staticSize(200, 20),
                 new TextField.Builder()
                     .withHintText(Component.literal("Hint Text"))
-                    .withOnChange(Tau.LOGGER::info)
+                    .withOnChange(Upsilon.LOGGER::info)
             )
         );
     }

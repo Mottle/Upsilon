@@ -1,10 +1,10 @@
 package com.github.wintersteve25.tau.components.render;
 
-import com.github.wintersteve25.tau.Tau;
 import com.github.wintersteve25.tau.build.BuildContext;
 import com.github.wintersteve25.tau.menu.MenuSlot;
 import com.github.wintersteve25.tau.layout.Axis;
 import com.github.wintersteve25.tau.theme.Theme;
+import moe.liar.upsilon.Upsilon;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -57,7 +57,7 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
         }
 
         if (!visualOnlyTransforms.isEmpty()) {
-            Tau.LOGGER.warn("Transform only guarantees correct layout/input for translation transforms; applying non-translation transforms as visual-only best effort");
+            Upsilon.LOGGER.warn("Transform only guarantees correct layout/input for translation transforms; applying non-translation transforms as visual-only best effort");
         }
 
         List<Renderable> children = new ArrayList<>();

@@ -1,8 +1,8 @@
 package com.github.wintersteve25.tau.theme;
 
-import com.github.wintersteve25.tau.Tau;
 import com.github.wintersteve25.tau.utils.Color;
 import com.github.wintersteve25.tau.utils.InteractableState;
+import moe.liar.upsilon.Upsilon;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
@@ -19,8 +19,8 @@ import java.util.Optional;
 public class MinecraftTheme implements Theme {
     public static final Theme INSTANCE = new MinecraftTheme();
 
-    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(Tau.MOD_ID, "textures/gui/container.png");
-    private static final ResourceLocation SLOT_TEXTURE = ResourceLocation.fromNamespaceAndPath(Tau.MOD_ID, "textures/gui/slot.png");
+    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(Upsilon.MOD_ID, "textures/gui/container.png");
+    private static final ResourceLocation SLOT_TEXTURE = ResourceLocation.fromNamespaceAndPath(Upsilon.MOD_ID, "textures/gui/slot.png");
     private static final Color TEXT = new Color(0xFFE8E8E8);
 
     @Override

@@ -1,14 +1,14 @@
 modLoader="javafml"
 loaderVersion="${loader_version_range}"
 license="${mod_license}"
-issueTrackerURL="https://github.com/mc-tau-ui/Tau/issues"
+issueTrackerURL="https://github.com/Mottle/Upsilon/issues"
 
 [[mods]]
 modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
 #updateJSONURL="https://change.me.example.invalid/updates.json" #optional
-displayURL="https://mc-tau-ui.github.io/"
+displayURL="https://github.com/Mottle/Upsilon"
 #logoFile="examplemod.png"
 #credits=""
 authors="${mod_authors}"

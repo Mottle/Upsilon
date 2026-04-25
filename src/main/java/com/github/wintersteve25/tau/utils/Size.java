@@ -1,6 +1,6 @@
 package com.github.wintersteve25.tau.utils;
 
-import com.github.wintersteve25.tau.Tau;
+import moe.liar.upsilon.Upsilon;
 
 @FunctionalInterface
 public interface Size {
@@ -10,7 +10,7 @@ public interface Size {
 
     static Size percentage(float percentage) {
         if (percentage < 0 || percentage > 1) {
-            Tau.LOGGER.error("Size percentage can not be less than 0 or greater than 1");
+            Upsilon.LOGGER.error("Size percentage can not be less than 0 or greater than 1");
             return ZERO;
         }
 
@@ -19,7 +19,7 @@ public interface Size {
 
     static Size percentage(float percentageX, float percentageY) {
         if (percentageX < 0 || percentageX > 1 || percentageY < 0 || percentageY > 1) {
-            Tau.LOGGER.error("Size percentage can not be less than 0 or greater than 1");
+            Upsilon.LOGGER.error("Size percentage can not be less than 0 or greater than 1");
             return ZERO;
         }
 

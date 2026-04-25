@@ -1,4 +1,4 @@
-# v2.0.0 Neoforge-1.20.6 Major Update - Changes since Tau 1.0.3-1.19
+# v2.0.0 Neoforge-1.20.6 Major Update - Changes since Upsilon 1.0.3-1.19
 ## API Changes
 - `Vector2i` renamed to `SimpleVec2i`
 - Theme signature changes to work with the new Minecraft `GuiGraphics` API
@@ -9,8 +9,8 @@
 - `PrimitiveComponent#build` will now take in a `BuildContext` instead of lists
 - Added `ClientTooltipPositioner` parameter to `Tooltip`
 - Added `menu` package
-  - Adds container/menu support to Tau
-  - Tau can now be used to create UI with inventories
+  - Adds container/menu support to Upsilon
+  - Upsilon can now be used to create UI with inventories
   - Added new `PlayerInventory` and `ItemSlot` Component (These components will only function in a `TauMenu`)
 
 ## Internal Changes

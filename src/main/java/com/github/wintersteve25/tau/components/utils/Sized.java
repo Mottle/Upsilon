@@ -2,7 +2,6 @@ package com.github.wintersteve25.tau.components.utils;
 
 import com.github.wintersteve25.tau.build.BuildContext;
 import com.github.wintersteve25.tau.theme.Theme;
-import com.github.wintersteve25.tau.Tau;
 import com.github.wintersteve25.tau.components.base.PrimitiveUIComponent;
 import com.github.wintersteve25.tau.components.base.UIComponent;
 import com.github.wintersteve25.tau.layout.Axis;
@@ -10,6 +9,7 @@ import com.github.wintersteve25.tau.layout.Layout;
 import com.github.wintersteve25.tau.utils.Size;
 import com.github.wintersteve25.tau.build.UIBuilder;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
+import moe.liar.upsilon.Upsilon;
 
 public final class Sized implements PrimitiveUIComponent {
 
@@ -26,7 +26,7 @@ public final class Sized implements PrimitiveUIComponent {
         SimpleVec2i componentSize = size.get(layout.getSize());
 
         if (componentSize.outside(layout.getSize())) {
-            Tau.LOGGER.error("Sized UIComponent has a size greater than the amount of size available");
+            Upsilon.LOGGER.error("Sized UIComponent has a size greater than the amount of size available");
             return layout.getSize();
         }
 
