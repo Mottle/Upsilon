@@ -35,32 +35,19 @@ public final class Padding implements PrimitiveUIComponent {
             return UIBuilder.build(layout, theme, child, context);
         }
 
-        boolean pushedHSizeMod = false;
-        boolean pushedVSizeMod = false;
-
         try {
-            if (pad.left == 0 || pad.right == 0) {
-                layout.pushOffset(Axis.HORIZONTAL, pad.left - pad.right);
-            } else {
-                layout.pushOffset(Axis.HORIZONTAL, pad.left);
-                layout.pushSizeMod(Axis.HORIZONTAL, - pad.right - pad.left);
-                pushedHSizeMod = true;
-            }
+            layout.pushOffset(Axis.HORIZONTAL, pad.left);
+            layout.pushSizeMod(Axis.HORIZONTAL, -pad.right - pad.left);
 
-            if (pad.top == 0 || pad.bottom == 0) {
-                layout.pushOffset(Axis.VERTICAL, pad.top - pad.bottom);
-            } else {
-                layout.pushOffset(Axis.VERTICAL, pad.top);
-                layout.pushSizeMod(Axis.VERTICAL, - pad.bottom - pad.top);
-                pushedVSizeMod = true;
-            }
+            layout.pushOffset(Axis.VERTICAL, pad.top);
+            layout.pushSizeMod(Axis.VERTICAL, -pad.bottom - pad.top);
 
             return UIBuilder.build(layout, theme, child, context).addNew(pad.getSize());
         } finally {
+            layout.popSizeMod(Axis.VERTICAL);
             layout.popOffset(Axis.VERTICAL);
+            layout.popSizeMod(Axis.HORIZONTAL);
             layout.popOffset(Axis.HORIZONTAL);
-            if (pushedVSizeMod) layout.popSizeMod(Axis.VERTICAL);
-            if (pushedHSizeMod) layout.popSizeMod(Axis.HORIZONTAL);
         }
     }
 }

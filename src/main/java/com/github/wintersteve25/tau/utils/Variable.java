@@ -66,9 +66,12 @@ public class Variable<T> {
     }
 
     /**
-     * Returns whether this variable has changed since initialization.
+     * Returns whether this variable has changed since the last call to this method
+     * and resets the change flag.
      */
     public boolean hasChangedSinceLastGet() {
-        return changedSince;
+        boolean changed = changedSince;
+        changedSince = false;
+        return changed;
     }
 }

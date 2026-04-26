@@ -36,19 +36,21 @@ public abstract class DynamicUIComponent implements UIComponent {
 
     /**
      * Hook used by {@code UIBuilder} after this dynamic component has been built.
+     * Subclasses may override to react to build completion.
      *
      * @param context active build context
      */
-    public final void finalizeDynamic(BuildContext context) {
+    public void finalizeDynamic(BuildContext context) {
     }
 
     /**
      * Hook used by {@code UIBuilder} before this dynamic component is built.
+     * Subclasses may override to react to build start.
      *
      * @param context active build context
      * @param layout current layout snapshot
      * @param theme active theme
      */
-    public final void buildDynamic(BuildContext context, Layout layout, Theme theme) {
+    public void buildDynamic(BuildContext context, Layout layout, Theme theme) {
     }
 }

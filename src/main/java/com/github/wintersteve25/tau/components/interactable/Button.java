@@ -87,7 +87,7 @@ public final class Button implements PrimitiveUIComponent, GuiEventListener {
     }
 
     private boolean isHovered(int pMouseX, int pMouseY) {
-        return pMouseX > x && pMouseX < x + width && pMouseY > y && pMouseY < y + height;
+        return SimpleVec2i.within(pMouseX, pMouseY, x, y, width, height);
     }
 
     private InteractableState getInteractableState(int pMouseX, int pMouseY) {
