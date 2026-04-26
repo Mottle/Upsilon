@@ -44,7 +44,11 @@ public class TestAll implements UIComponent {
                         new TestButton(new TestTooltip()),
                         new TestButton(new TestTransform()),
                         new TestButton(new TestWidgetWrapper()),
-                        new TestButton(new TestInventoryVisual())
+                        new TestButton(new TestInventoryVisual()),
+                        new TestButton(new TestPartialText()),
+                        new TestButton(new TestPartialButton()),
+                        new TestButton(new TestPartialTransform()),
+                        new TestButton(new TestPartialListView())
                 );
     }
 
