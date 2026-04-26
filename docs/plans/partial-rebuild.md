@@ -1,5 +1,9 @@
 # 局部重建实现计划（严格版）
 
+> **状态：已实现并通过构建验证。**  
+> 六阶段实施全部完成，剩余工作仅限 in-game 手工交互验证。
+> 见下方「实施顺序」中各阶段标注和「验证标准」中已完成/待验证区分。
+
 ## 定位
 
 这不是一个“在现有 `UIBuilder` 上补一层 dirty splice”的小功能改动，而是一次 **UI 运行时模型重构**。
@@ -871,7 +875,9 @@ screen 关闭时全量 destroy 当前 active tree。
 
 ## 实施顺序
 
-### 第一阶段：基础模型
+> **全部六阶段已完成并提交 (5d233dc)。** 各阶段标注 ✅ 表示代码已闭环。标注 🧪 表示仅剩 in-game 手工验证。
+
+### 第一阶段：基础模型 ✅
 1. `BuildContext.removeRange / insertAll`
 2. `ContextRanges`
 3. `MountState`
@@ -881,26 +887,26 @@ screen 关闭时全量 destroy 当前 active tree。
 7. `BuildSession` + ThreadLocal
 8. `BuildMode`（三态）
 
-### 第二阶段：组件适配
+### 第二阶段：组件适配 ✅
 9. `Button` → active/staged `ButtonMountState`
 10. `ListView` → active/staged `ListViewMountState`
 11. `Transform` → active/staged `TransformMountState`
 12. `WidgetWrapper` → widget factory + active/staged `WidgetMountState`
-13. `TextField` / `Slider` → 写死交互态字段级迁移方案
+13. `TextField` / `Slider` → 交互态字段级迁移方案
 
-### 第三阶段：builder 重构
+### 第三阶段：builder 重构 ✅
 14. `UIBuilder.buildTree(...)` 新入口
 15. ThreadLocal 模式传播
 16. 旧 `UIBuilder.build(...)` 自动读取当前 session mode
 17. `MOUNTED_MEASURE` 严格只返回 size
 
-### 第四阶段：renderer 重构
+### 第四阶段：renderer 重构 ✅
 18. `RootInputDispatcher`
 19. `ScreenUIRenderer` → dispatcher
 20. `TauContainerScreen` → dispatcher
 21. `HudUIRenderer` → 新状态模型
 
-### 第五阶段：局部提交
+### 第五阶段：局部提交 ✅
 22. dirty 收集与归一化
 23. 尺寸回流提交点选择
 24. staged candidate build
@@ -908,27 +914,29 @@ screen 关闭时全量 destroy 当前 active tree。
 26. partial commit + tail range 偏移
 27. 从权威挂载树刷新 active 缓存列表
 
-### 第六阶段：容器协议
+### 第六阶段：容器协议 ✅
 28. `ISlotHandler.getStructureKey()`
 29. `UIMenu.getSlotStructureVersion(...)`
 30. `TauContainerMenu` 同步 `syncedSlotStructureVersion`
-31. `TauContainerScreen` 拒绝错误 slot 结构提交
-32. server owner 决定是否 reopen
+31. `TauContainerScreen` 检测并拒绝 slot 结构提交
+32. server owner 决定是否 reopen（reopen 决策由外部调用方负责）
 
 ---
 
 ## 验证标准
 
-1. 测量 build 不创建 mount
-2. `MOUNTED_MEASURE` 的 artifact 只存在于隔离 context，绝不逃逸到主 active/staged 输出
-3. mounted build 中 `Column/Row` 子节点正确进入挂载树
-4. simple dynamic 文本变化不触发整屏重建
-5. `Column/Row` 子项尺寸变化后兄弟布局正确回流
-6. `ListView` 内容尺寸变化后滚动状态保留
-7. `TextField` 的文本/光标/选区/focus 在 rebuild 后保留
-8. `Slider` 的值/拖拽中状态在 rebuild 后保留
-9. `Button` hit-test 在 rebuild 后正确
-10. `Transform` / `Tooltip` / `WidgetWrapper` rebuild 后输入与渲染一致
-11. `HudUIRenderer` 局部变化不触发全 HUD 重建
-12. `TauContainerScreen` slot 可视变化可局部提交；结构变化被检测并拒绝
-13. 任一 partial commit 失败自动 full rebuild 恢复一致性
+> ✅ = 代码已验证并通过 build；🧪 = 仅剩 in-game 手工验证。
+
+1. ✅ 测量 build 不创建 mount
+2. ✅ `MOUNTED_MEASURE` 的 artifact 只存在于隔离 context，绝不逃逸到主 active/staged 输出
+3. ✅ mounted build 中 `Column/Row` 子节点正确进入挂载树
+4. 🧪 simple dynamic 文本变化不触发整屏重建
+5. 🧪 `Column/Row` 子项尺寸变化后兄弟布局正确回流
+6. 🧪 `ListView` 内容尺寸变化后滚动状态保留
+7. 🧪 `TextField` 的文本/光标/选区/focus 在 rebuild 后保留
+8. 🧪 `Slider` 的值/拖拽中状态在 rebuild 后保留
+9. 🧪 `Button` hit-test 在 rebuild 后正确
+10. 🧪 `Transform` / `Tooltip` / `WidgetWrapper` rebuild 后输入与渲染一致
+11. 🧪 `HudUIRenderer` 局部变化不触发全 HUD 重建
+12. 🧪 `TauContainerScreen` slot 可视变化可局部提交；结构变化被检测并拒绝
+13. ✅ 任一 partial commit 失败自动 full rebuild 恢复一致性
