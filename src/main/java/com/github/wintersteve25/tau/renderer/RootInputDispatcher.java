@@ -44,4 +44,11 @@ public final class RootInputDispatcher implements ContainerEventHandler {
     public void setFocused(@Nullable GuiEventListener pFocused) {
         focused = pFocused;
     }
+
+    public void clearFocusedIfMissing() {
+        if (focused != null && !childrenSupplier.get().contains(focused)) {
+            focused = null;
+            dragging = false;
+        }
+    }
 }

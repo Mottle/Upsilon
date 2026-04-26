@@ -43,21 +43,25 @@ public record BuildContext(
         return end - start;
     }
 
-    public static void splice(BuildContext target, ContextRanges oldRanges, BuildContext replacement) {
+    public static <T> List<T> slice(List<T> list, int start, int end) {
+        return new ArrayList<>(list.subList(start, end));
+    }
+
+    public static void splice(BuildContext target, ContextRanges oldRanges, BuildContext replacement, ContextRanges replacementRanges) {
         removeRange(target.renderables, oldRanges.renderableStart(), oldRanges.renderableEnd());
-        insertAll(target.renderables, oldRanges.renderableStart(), replacement.renderables);
+        insertAll(target.renderables, oldRanges.renderableStart(), slice(replacement.renderables, replacementRanges.renderableStart(), replacementRanges.renderableEnd()));
 
         removeRange(target.tooltips, oldRanges.tooltipStart(), oldRanges.tooltipEnd());
-        insertAll(target.tooltips, oldRanges.tooltipStart(), replacement.tooltips);
+        insertAll(target.tooltips, oldRanges.tooltipStart(), slice(replacement.tooltips, replacementRanges.tooltipStart(), replacementRanges.tooltipEnd()));
 
         removeRange(target.dynamicUIComponents, oldRanges.dynamicStart(), oldRanges.dynamicEnd());
-        insertAll(target.dynamicUIComponents, oldRanges.dynamicStart(), replacement.dynamicUIComponents);
+        insertAll(target.dynamicUIComponents, oldRanges.dynamicStart(), slice(replacement.dynamicUIComponents, replacementRanges.dynamicStart(), replacementRanges.dynamicEnd()));
 
         removeRange(target.eventListeners, oldRanges.listenerStart(), oldRanges.listenerEnd());
-        insertAll(target.eventListeners, oldRanges.listenerStart(), replacement.eventListeners);
+        insertAll(target.eventListeners, oldRanges.listenerStart(), slice(replacement.eventListeners, replacementRanges.listenerStart(), replacementRanges.listenerEnd()));
 
         removeRange(target.slots, oldRanges.slotStart(), oldRanges.slotEnd());
-        insertAll(target.slots, oldRanges.slotStart(), replacement.slots);
+        insertAll(target.slots, oldRanges.slotStart(), slice(replacement.slots, replacementRanges.slotStart(), replacementRanges.slotEnd()));
     }
 
     /**

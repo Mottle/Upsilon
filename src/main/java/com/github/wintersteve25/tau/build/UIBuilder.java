@@ -152,7 +152,7 @@ public class UIBuilder {
         return buildTree(target.getSavedLayout().copy(), target.getSavedTheme(), target.getOwner());
     }
 
-        public static PartialCommitPlan planPartialCommit(ComponentMount dirtyMount, BuildContext rootContext) {
+    public static PartialCommitPlan planPartialCommit(ComponentMount dirtyMount, BuildContext rootContext) {
         ComponentMount current = chooseCommitTarget(dirtyMount);
         while (current != null) {
             BuildResult candidate = rebuildFrom(current);
@@ -173,28 +173,35 @@ public class UIBuilder {
                 continue;
             }
 
-            if (reusableTarget.getArtifactContext() != rootContext) {
+            ComponentMount candidateTarget = candidateRoot.findByOwnerIdentity(reusableTarget.getOwner());
+            if (candidateTarget == null) {
                 current = current.getParent();
                 continue;
             }
 
-            if (candidateRoot.getBuiltSize().x != reusableTarget.getBuiltSize().x || candidateRoot.getBuiltSize().y != reusableTarget.getBuiltSize().y) {
+            if (candidateTarget.getBuiltSize().x != reusableTarget.getBuiltSize().x || candidateTarget.getBuiltSize().y != reusableTarget.getBuiltSize().y) {
                 current = current.getParent();
                 continue;
             }
 
             ContextRanges oldRanges = reusableTarget.getRanges();
+            ContextRanges replacementRanges = candidateTarget.getRanges();
             return new PartialCommitPlan(
                     reusableTarget,
                     candidate,
                     candidateRoot,
+                    candidateTarget,
                     reusableTarget.collectSubtreePreorder(),
+                    candidateTarget.collectSubtreePreorder(),
+                    reusableTarget.getArtifactContext(),
+                    candidateTarget.getArtifactContext(),
                     oldRanges,
-                    candidate.context().renderables().size() - BuildContext.rangeLength(oldRanges.renderableStart(), oldRanges.renderableEnd()),
-                    candidate.context().tooltips().size() - BuildContext.rangeLength(oldRanges.tooltipStart(), oldRanges.tooltipEnd()),
-                    candidate.context().dynamicUIComponents().size() - BuildContext.rangeLength(oldRanges.dynamicStart(), oldRanges.dynamicEnd()),
-                    candidate.context().eventListeners().size() - BuildContext.rangeLength(oldRanges.listenerStart(), oldRanges.listenerEnd()),
-                    candidate.context().slots().size() - BuildContext.rangeLength(oldRanges.slotStart(), oldRanges.slotEnd())
+                    replacementRanges,
+                    BuildContext.rangeLength(replacementRanges.renderableStart(), replacementRanges.renderableEnd()) - BuildContext.rangeLength(oldRanges.renderableStart(), oldRanges.renderableEnd()),
+                    BuildContext.rangeLength(replacementRanges.tooltipStart(), replacementRanges.tooltipEnd()) - BuildContext.rangeLength(oldRanges.tooltipStart(), oldRanges.tooltipEnd()),
+                    BuildContext.rangeLength(replacementRanges.dynamicStart(), replacementRanges.dynamicEnd()) - BuildContext.rangeLength(oldRanges.dynamicStart(), oldRanges.dynamicEnd()),
+                    BuildContext.rangeLength(replacementRanges.listenerStart(), replacementRanges.listenerEnd()) - BuildContext.rangeLength(oldRanges.listenerStart(), oldRanges.listenerEnd()),
+                    BuildContext.rangeLength(replacementRanges.slotStart(), replacementRanges.slotEnd()) - BuildContext.rangeLength(oldRanges.slotStart(), oldRanges.slotEnd())
             );
         }
         return null;
@@ -230,35 +237,54 @@ public class UIBuilder {
         }
     }
 
+    public static void growAncestorRangeEnds(ComponentMount start, BuildContext targetContext, int dr, int dt, int dd, int dl, int ds) {
+        ComponentMount current = start.getParent();
+        while (current != null) {
+            if (current.getArtifactContext() == targetContext) {
+                ContextRanges ranges = current.getRanges();
+                current.setRanges(new ContextRanges(
+                        ranges.renderableStart(), ranges.renderableEnd() + dr,
+                        ranges.tooltipStart(), ranges.tooltipEnd() + dt,
+                        ranges.dynamicStart(), ranges.dynamicEnd() + dd,
+                        ranges.listenerStart(), ranges.listenerEnd() + dl,
+                        ranges.slotStart(), ranges.slotEnd() + ds
+                ));
+            }
+            current = current.getParent();
+        }
+    }
+
     public static BuildResult applyPartialCommit(BuildResult activeBuild, PartialCommitPlan plan, BuildContext mainContext) {
-        ComponentMount candidateRoot = plan.candidateRoot();
+        ComponentMount candidateTarget = plan.candidateTarget();
         ContextRanges oldRanges = plan.oldRanges();
 
-        destroyOrphans(plan.oldSubtree(), candidateRoot.collectSubtreePreorder());
-        BuildContext.splice(mainContext, oldRanges, plan.candidate().context());
+        destroyOrphans(plan.oldSubtree(), plan.newSubtree());
+        BuildContext.splice(plan.targetContext(), oldRanges, plan.replacementContext(), plan.replacementRanges());
         shiftSubtreeRanges(
-                candidateRoot.collectSubtreePreorder(),
-                oldRanges.renderableStart(),
-                oldRanges.tooltipStart(),
-                oldRanges.dynamicStart(),
-                oldRanges.listenerStart(),
-                oldRanges.slotStart()
+                plan.newSubtree(),
+                oldRanges.renderableStart() - plan.replacementRanges().renderableStart(),
+                oldRanges.tooltipStart() - plan.replacementRanges().tooltipStart(),
+                oldRanges.dynamicStart() - plan.replacementRanges().dynamicStart(),
+                oldRanges.listenerStart() - plan.replacementRanges().listenerStart(),
+                oldRanges.slotStart() - plan.replacementRanges().slotStart()
         );
 
         ComponentMount parent = plan.activeTarget().getParent();
+        SimpleVec2i resultSize = activeBuild.size();
         if (parent == null) {
             activeBuild.rootMounts().clear();
-            activeBuild.rootMounts().add(candidateRoot);
+            activeBuild.rootMounts().add(candidateTarget);
+            resultSize = plan.candidate().size();
         } else {
-            plan.activeTarget().replaceWith(candidateRoot);
+            plan.activeTarget().replaceWith(candidateTarget);
         }
 
         promoteStagedStates(plan.candidate());
 
         List<ComponentMount> activeRoots = activeBuild.rootMounts();
-        BuildResult indexedBeforeTailShift = indexBuild(activeBuild.size(), mainContext, activeRoots);
+        BuildResult indexedBeforeTailShift = indexBuild(resultSize, mainContext, activeRoots);
         for (ComponentMount mount : indexedBeforeTailShift.preorderMounts()) {
-            if (mount.getRanges().renderableStart() >= oldRanges.renderableEnd()) {
+            if (mount.getArtifactContext() == plan.targetContext() && mount.getRanges().renderableStart() >= oldRanges.renderableEnd()) {
                 mount.setRanges(mount.getRanges().shiftedBy(
                         plan.renderableDelta(),
                         plan.tooltipDelta(),
@@ -269,7 +295,9 @@ public class UIBuilder {
             }
         }
 
-        return indexBuild(activeBuild.size(), mainContext, activeRoots);
+        growAncestorRangeEnds(plan.activeTarget(), plan.targetContext(), plan.renderableDelta(), plan.tooltipDelta(), plan.dynamicDelta(), plan.listenerDelta(), plan.slotDelta());
+
+        return indexBuild(resultSize, mainContext, activeRoots);
     }
 
     // param size is the accumulated size of this component branch

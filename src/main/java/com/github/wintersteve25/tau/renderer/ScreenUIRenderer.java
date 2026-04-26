@@ -95,6 +95,7 @@ public class ScreenUIRenderer extends Screen {
         activeBuild = result;
         mainContext = result.context();
         dynamicUIComponents = new ArrayList<>(result.context().dynamicUIComponents());
+        dispatcher.clearFocusedIfMissing();
     }
 
     private boolean tryPartialCommit(ComponentMount dirtyMount) {
@@ -104,6 +105,7 @@ public class ScreenUIRenderer extends Screen {
         }
         activeBuild = UIBuilder.applyPartialCommit(activeBuild, plan, mainContext);
         dynamicUIComponents = new ArrayList<>(mainContext.dynamicUIComponents());
+        dispatcher.clearFocusedIfMissing();
         return true;
     }
 

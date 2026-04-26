@@ -97,6 +97,7 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
         activeSlotStructureKeys = currentSlotStructureKeys(mainContext);
         activeSlotStructureVersion = menu.getSyncedSlotStructureVersion();
         applySlotVisualState(mainContext);
+        dispatcher.clearFocusedIfMissing();
         stale = false;
     }
 
@@ -113,8 +114,9 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
             return true;
         }
         ContextRanges oldRanges = plan.oldRanges();
-        List<Object> oldKeys = activeSlotStructureKeys.subList(oldRanges.slotStart(), oldRanges.slotEnd());
-        List<Object> newKeys = currentSlotStructureKeys(plan.candidate().context());
+        ContextRanges replacementRanges = plan.replacementRanges();
+        List<Object> oldKeys = BuildContext.slice(plan.targetContext().slots(), oldRanges.slotStart(), oldRanges.slotEnd()).stream().map(slot -> slot.handler().getStructureKey()).toList();
+        List<Object> newKeys = BuildContext.slice(plan.replacementContext().slots(), replacementRanges.slotStart(), replacementRanges.slotEnd()).stream().map(slot -> slot.handler().getStructureKey()).toList();
         return !newKeys.equals(oldKeys);
     }
 
@@ -134,6 +136,7 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
         applySlotVisualState(mainContext);
         activeSlotStructureKeys = currentSlotStructureKeys(mainContext);
         activeSlotStructureVersion = menu.getSyncedSlotStructureVersion();
+        dispatcher.clearFocusedIfMissing();
         return true;
     }
 

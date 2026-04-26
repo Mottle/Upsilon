@@ -83,7 +83,7 @@ public class HudUIRenderer {
         }
 
         for (ComponentMount dirtyMount : dirtyMounts) {
-             PartialCommitPlan plan = UIBuilder.planPartialCommit(dirtyMount, mainContext);
+            PartialCommitPlan plan = UIBuilder.planPartialCommit(dirtyMount, mainContext);
             if (plan == null) {
                 init();
                 return;

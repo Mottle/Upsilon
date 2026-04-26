@@ -146,4 +146,17 @@ public final class ComponentMount {
         }
         return false;
     }
+
+    public ComponentMount findByOwnerIdentity(Object owner) {
+        if (this.owner == owner) {
+            return this;
+        }
+        for (ComponentMount child : children) {
+            ComponentMount match = child.findByOwnerIdentity(owner);
+            if (match != null) {
+                return match;
+            }
+        }
+        return null;
+    }
 }

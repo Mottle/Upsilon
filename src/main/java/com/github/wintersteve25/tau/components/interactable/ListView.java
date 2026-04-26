@@ -230,6 +230,9 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
      */
     @Override
     public Optional<GuiEventListener> getChildAt(double pMouseX, double pMouseY) {
+        if (!isMouseOver(pMouseX, pMouseY)) {
+            return Optional.empty();
+        }
         return ContainerEventHandler.super.getChildAt(pMouseX, pMouseY - scrollOffset);
     }
 
@@ -253,6 +256,9 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
      */
     @Override
     public boolean mouseClicked(double pMouseX, double pMouseY, int pButton) {
+        if (!isMouseOver(pMouseX, pMouseY)) {
+            return false;
+        }
         return ContainerEventHandler.super.mouseClicked(pMouseX, pMouseY - scrollOffset, pButton);
     }
 

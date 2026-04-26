@@ -192,11 +192,19 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
         }
     }
 
+    private void clearFocusedIfMissing() {
+        if (activeMountState != null && activeMountState.focused != null && !activeMountState.childrenEventListeners.contains(activeMountState.focused)) {
+            activeMountState.focused = null;
+            activeMountState.dragging = false;
+        }
+    }
+
     /**
      * Resolves child under mouse, accounting for visual-only transforms.
      */
     @Override
     public Optional<GuiEventListener> getChildAt(double pMouseX, double pMouseY) {
+        clearFocusedIfMissing();
         Vector2d mousePos = transformedMouse(pMouseX, pMouseY);
         return ContainerEventHandler.super.getChildAt(mousePos.x, mousePos.y);
     }
@@ -206,6 +214,7 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
      */
     @Override
     public boolean mouseClicked(double pMouseX, double pMouseY, int pButton) {
+        clearFocusedIfMissing();
         Vector2d mousePos = transformedMouse(pMouseX, pMouseY);
         return ContainerEventHandler.super.mouseClicked(mousePos.x, mousePos.y, pButton);
     }
@@ -215,6 +224,7 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
      */
     @Override
     public boolean mouseReleased(double pMouseX, double pMouseY, int pButton) {
+        clearFocusedIfMissing();
         Vector2d mousePos = transformedMouse(pMouseX, pMouseY);
         return ContainerEventHandler.super.mouseReleased(mousePos.x, mousePos.y, pButton);
     }
@@ -224,6 +234,7 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
      */
     @Override
     public boolean mouseDragged(double pMouseX, double pMouseY, int pButton, double pDragX, double pDragY) {
+        clearFocusedIfMissing();
         Vector2d mousePos = transformedMouse(pMouseX, pMouseY);
         return ContainerEventHandler.super.mouseDragged(mousePos.x, mousePos.y, pButton, pDragX, pDragY);
     }
@@ -233,6 +244,7 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
      */
     @Override
     public boolean mouseScrolled(double pMouseX, double pMouseY, double pScrollX, double pScrollY) {
+        clearFocusedIfMissing();
         Vector2d mousePos = transformedMouse(pMouseX, pMouseY);
         return ContainerEventHandler.super.mouseScrolled(mousePos.x, mousePos.y, pScrollX, pScrollY);
     }
