@@ -1,14 +1,14 @@
 package com.github.wintersteve25.tau.components.utils;
 
 import com.github.wintersteve25.tau.build.BuildContext;
-import com.github.wintersteve25.tau.theme.Theme;
+import com.github.wintersteve25.tau.build.UIBuilder;
 import com.github.wintersteve25.tau.components.base.PrimitiveUIComponent;
 import com.github.wintersteve25.tau.components.base.UIComponent;
 import com.github.wintersteve25.tau.layout.Axis;
 import com.github.wintersteve25.tau.layout.Layout;
-import com.github.wintersteve25.tau.utils.Size;
-import com.github.wintersteve25.tau.build.UIBuilder;
+import com.github.wintersteve25.tau.theme.Theme;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
+import com.github.wintersteve25.tau.utils.Size;
 import moe.liar.upsilon.Upsilon;
 
 /**

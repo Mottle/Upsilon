@@ -11,4 +11,11 @@ public interface ISlotHandler {
      * Adds one or more concrete slots to the target menu at the provided GUI origin.
      */
     void setupSync(TauContainerMenu menu, Inventory playerInv, int x, int y);
+
+    /**
+     * Returns a stable key describing this handler's structural slot identity.
+     */
+    default Object getStructureKey() {
+        return getClass().getName();
+    }
 }

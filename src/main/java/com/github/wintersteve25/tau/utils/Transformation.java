@@ -28,6 +28,22 @@ public class Transformation {
     }
 
     /**
+     * Creates a scale transform.
+     */
+    public static Transformation scale(Vector3f scale) {
+        Matrix4f matrix4f = new Matrix4f().identity().scale(scale);
+        return new Transformation(matrix4f, new Matrix4f(matrix4f).invert(), null, false);
+    }
+
+    /**
+     * Creates a translation transform.
+     */
+    public static Transformation translate(Vector3f translation) {
+        Matrix4f matrix4f = new Matrix4f().identity().translation(translation);
+        return new Transformation(matrix4f, new Matrix4f(matrix4f).invert(), new Vector3f(translation), true);
+    }
+
+    /**
      * Applies this transform to the active pose stack.
      */
     public void transform(PoseStack poseStack) {
@@ -69,21 +85,5 @@ public class Transformation {
      */
     public Vector3f getTranslation() {
         return translation == null ? new Vector3f() : new Vector3f(translation);
-    }
-
-    /**
-     * Creates a scale transform.
-     */
-    public static Transformation scale(Vector3f scale) {
-        Matrix4f matrix4f = new Matrix4f().identity().scale(scale);
-        return new Transformation(matrix4f, new Matrix4f(matrix4f).invert(), null, false);
-    }
-
-    /**
-     * Creates a translation transform.
-     */
-    public static Transformation translate(Vector3f translation) {
-        Matrix4f matrix4f = new Matrix4f().identity().translation(translation);
-        return new Transformation(matrix4f, new Matrix4f(matrix4f).invert(), new Vector3f(translation), true);
     }
 }

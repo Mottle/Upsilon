@@ -1,21 +1,21 @@
 package com.github.wintersteve25.tau.components.utils;
 
 import com.github.wintersteve25.tau.build.BuildContext;
+import com.github.wintersteve25.tau.build.BuilderShell;
 import com.github.wintersteve25.tau.build.UIBuilder;
+import com.github.wintersteve25.tau.components.base.PrimitiveUIComponent;
+import com.github.wintersteve25.tau.components.base.UIComponent;
 import com.github.wintersteve25.tau.components.render.Render;
+import com.github.wintersteve25.tau.layout.Axis;
+import com.github.wintersteve25.tau.layout.Layout;
 import com.github.wintersteve25.tau.theme.Theme;
+import com.github.wintersteve25.tau.utils.Color;
 import com.github.wintersteve25.tau.utils.RenderProvider;
-
+import com.github.wintersteve25.tau.utils.SimpleVec2i;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import com.github.wintersteve25.tau.components.base.PrimitiveUIComponent;
-import com.github.wintersteve25.tau.components.base.UIComponent;
-import com.github.wintersteve25.tau.utils.Color;
-import com.github.wintersteve25.tau.layout.Axis;
-import com.github.wintersteve25.tau.layout.Layout;
-import com.github.wintersteve25.tau.utils.SimpleVec2i;
 import net.minecraft.network.chat.FormattedText;
 
 /**
@@ -32,8 +32,8 @@ public final class Text implements PrimitiveUIComponent, RenderProvider {
     /**
      * Creates a text component.
      *
-     * @param text formatted text content
-     * @param color explicit text color, or null to use theme color
+     * @param text              formatted text content
+     * @param color             explicit text color, or null to use theme color
      * @param overflowBehaviour overflow mode
      */
     public Text(FormattedText text, Color color, OverflowBehaviour overflowBehaviour) {
@@ -96,39 +96,60 @@ public final class Text implements PrimitiveUIComponent, RenderProvider {
 
         switch (overflowBehaviour) {
             case WRAP -> graphics.drawWordWrap(font, text, x, y, width, renderColor.getAARRGGBB());
-            case ELLIPSIS -> graphics.drawString(font, font.substrByWidth(text, width - ellipsisWidth).getString() + ellipsisText, x, y, renderColor.getAARRGGBB(), true);
+            case ELLIPSIS ->
+                    graphics.drawString(font, font.substrByWidth(text, width - ellipsisWidth).getString() + ellipsisText, x, y, renderColor.getAARRGGBB(), true);
             default -> graphics.drawString(font, text.getString(), x, y, renderColor.getAARRGGBB(), true);
         }
     }
 
-    public static final class Builder implements UIComponent {
+    /**
+     * Overflow handling mode for text rendering.
+     */
+    public enum OverflowBehaviour {
+        OVERFLOW,
+        WRAP,
+        CLIP,
+        ELLIPSIS
+    }
+
+    public static final class Builder implements UIComponent, BuilderShell {
         private final Component text;
         private Color color;
         private OverflowBehaviour overflowBehaviour;
 
-        /** Creates a builder from translatable/literal component text. */
+        /**
+         * Creates a builder from translatable/literal component text.
+         */
         public Builder(Component text) {
             this.text = text;
         }
 
-        /** Creates a builder from literal string text. */
+        /**
+         * Creates a builder from literal string text.
+         */
         public Builder(String text) {
             this.text = Component.literal(text);
         }
 
-        /** Sets explicit text color. */
+        /**
+         * Sets explicit text color.
+         */
         public Builder withColor(Color color) {
             this.color = color;
             return this;
         }
 
-        /** Sets overflow behavior for rendering. */
+        /**
+         * Sets overflow behavior for rendering.
+         */
         public Builder withOverflowBehaviour(OverflowBehaviour overflowBehaviour) {
             this.overflowBehaviour = overflowBehaviour;
             return this;
         }
 
-        /** Builds text component with default overflow mode when unset. */
+        /**
+         * Builds text component with default overflow mode when unset.
+         */
         public Text build() {
             return new Text(
                     text,
@@ -148,15 +169,5 @@ public final class Text implements PrimitiveUIComponent, RenderProvider {
                     overflowBehaviour == null ? OverflowBehaviour.OVERFLOW : overflowBehaviour
             );
         }
-    }
-
-    /**
-     * Overflow handling mode for text rendering.
-     */
-    public enum OverflowBehaviour {
-        OVERFLOW,
-        WRAP,
-        CLIP,
-        ELLIPSIS
     }
 }

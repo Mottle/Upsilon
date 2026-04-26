@@ -5,14 +5,12 @@ import com.github.wintersteve25.tau.utils.Variable;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.SlotItemHandler;
 
 /**
  * Slot handler that maps the player's full inventory (3 rows + hotbar).
  */
 public class PlayerInventoryHandler implements ISlotHandler {
-    
+
     private final Variable<Boolean> enabled;
 
     /**
@@ -29,7 +27,7 @@ public class PlayerInventoryHandler implements ISlotHandler {
     public void setupSync(TauContainerMenu menu, Inventory playerInv, int x, int y) {
         x += 1;
         y += 1;
-        
+
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 9; j++) {
                 menu.addSlot(new DisablableSlot(playerInv, j + i * 9 + 9, x + j * 18, y + i * 18, enabled));
@@ -42,7 +40,14 @@ public class PlayerInventoryHandler implements ISlotHandler {
         }
     }
 
-    /** Slot implementation that can be hidden/disabled via {@link Variable}. */
+    @Override
+    public Object getStructureKey() {
+        return getClass().getName() + ":player-inventory";
+    }
+
+    /**
+     * Slot implementation that can be hidden/disabled via {@link Variable}.
+     */
     private static class DisablableSlot extends Slot {
 
         private final Variable<Boolean> enabled;

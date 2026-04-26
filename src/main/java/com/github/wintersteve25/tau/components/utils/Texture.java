@@ -1,18 +1,13 @@
 package com.github.wintersteve25.tau.components.utils;
 
 import com.github.wintersteve25.tau.build.BuildContext;
-import com.github.wintersteve25.tau.components.base.UIComponent;
-import com.github.wintersteve25.tau.theme.Theme;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.events.GuiEventListener;
-import net.minecraft.client.gui.components.Renderable;
-import net.minecraft.resources.ResourceLocation;
-import com.github.wintersteve25.tau.components.base.DynamicUIComponent;
+import com.github.wintersteve25.tau.build.BuilderShell;
 import com.github.wintersteve25.tau.components.base.PrimitiveUIComponent;
+import com.github.wintersteve25.tau.components.base.UIComponent;
 import com.github.wintersteve25.tau.layout.Layout;
+import com.github.wintersteve25.tau.theme.Theme;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
-
-import java.util.List;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Primitive textured quad component.
@@ -29,10 +24,10 @@ public final class Texture implements PrimitiveUIComponent {
      * Creates a texture component.
      *
      * @param textureLocation texture atlas/resource location
-     * @param textureSize full texture dimensions in pixels
-     * @param uv top-left UV origin in texture pixels
-     * @param uvSize sampled UV size in texture pixels
-     * @param size rendered quad size in screen pixels
+     * @param textureSize     full texture dimensions in pixels
+     * @param uv              top-left UV origin in texture pixels
+     * @param uvSize          sampled UV size in texture pixels
+     * @param size            rendered quad size in screen pixels
      */
     public Texture(ResourceLocation textureLocation, SimpleVec2i textureSize, SimpleVec2i uv, SimpleVec2i uvSize, SimpleVec2i size) {
         this.textureLocation = textureLocation;
@@ -59,7 +54,7 @@ public final class Texture implements PrimitiveUIComponent {
         return size;
     }
 
-    public static final class Builder implements UIComponent {
+    public static final class Builder implements UIComponent, BuilderShell {
 
         private final ResourceLocation textureLocation;
         private SimpleVec2i textureSize;
@@ -74,31 +69,41 @@ public final class Texture implements PrimitiveUIComponent {
             this.textureLocation = textureLocation;
         }
 
-        /** Sets full texture dimensions in pixels. */
+        /**
+         * Sets full texture dimensions in pixels.
+         */
         public Builder withTextureSize(SimpleVec2i textureSize) {
             this.textureSize = textureSize;
             return this;
         }
 
-        /** Sets top-left UV origin in texture pixels. */
+        /**
+         * Sets top-left UV origin in texture pixels.
+         */
         public Builder withUv(SimpleVec2i uv) {
             this.uv = uv;
             return this;
         }
 
-        /** Sets sampled UV size in texture pixels. */
+        /**
+         * Sets sampled UV size in texture pixels.
+         */
         public Builder withUvSize(SimpleVec2i uvSize) {
             this.uvSize = uvSize;
             return this;
         }
 
-        /** Sets rendered size in screen pixels. */
+        /**
+         * Sets rendered size in screen pixels.
+         */
         public Builder withSize(SimpleVec2i size) {
             this.size = size;
             return this;
         }
 
-        /** Builds texture component with defaults for unset values. */
+        /**
+         * Builds texture component with defaults for unset values.
+         */
         public Texture build() {
             textureSize = textureSize == null ? new SimpleVec2i(256, 256) : textureSize;
             uvSize = uvSize == null ? textureSize : uvSize;

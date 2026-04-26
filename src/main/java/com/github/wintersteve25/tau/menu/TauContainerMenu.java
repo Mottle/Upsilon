@@ -2,16 +2,15 @@ package com.github.wintersteve25.tau.menu;
 
 import moe.liar.upsilon.Upsilon;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.*;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.DataSlot;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +30,7 @@ public class TauContainerMenu extends AbstractContainerMenu {
 
     private final Map<String, IndexedDataSlot> dataSlots;
     private final UIMenu menu;
+    private int syncedSlotStructureVersion;
 
     /**
      * Creates a container menu bound to a holder/menu pair.
@@ -42,6 +42,7 @@ public class TauContainerMenu extends AbstractContainerMenu {
         this.pos = pos;
         this.dataSlots = new HashMap<>();
         this.menu = holder.getMenu();
+        addDataSlot("upsilon_slot_structure_version", () -> this.menu.getSlotStructureVersion(this), value -> this.syncedSlotStructureVersion = value);
     }
 
     /**
@@ -79,7 +80,7 @@ public class TauContainerMenu extends AbstractContainerMenu {
         dataSlots.put(name, new IndexedDataSlot(dataSlots.size(), slot));
         addDataSlot(slot);
     }
-    
+
     /**
      * Convenience overload to register a named slot from getter/setter lambdas.
      */
@@ -138,9 +139,14 @@ public class TauContainerMenu extends AbstractContainerMenu {
         if (t.isInstance(e)) {
             return Optional.of(t.cast(e));
         }
-        
+
         return Optional.empty();
     }
 
-    private record IndexedDataSlot(int index, DataSlot dataSlot) {}
+    public int getSyncedSlotStructureVersion() {
+        return syncedSlotStructureVersion;
+    }
+
+    private record IndexedDataSlot(int index, DataSlot dataSlot) {
+    }
 }

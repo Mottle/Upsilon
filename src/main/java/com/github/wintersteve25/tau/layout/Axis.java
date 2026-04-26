@@ -4,8 +4,12 @@ package com.github.wintersteve25.tau.layout;
  * Two-dimensional axis used by layout operations.
  */
 public enum Axis {
-    /** Horizontal (x) axis. */
+    /**
+     * Horizontal (x) axis.
+     */
     HORIZONTAL,
-    /** Vertical (y) axis. */
+    /**
+     * Vertical (y) axis.
+     */
     VERTICAL
 }

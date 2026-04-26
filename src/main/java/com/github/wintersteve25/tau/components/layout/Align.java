@@ -1,13 +1,13 @@
 package com.github.wintersteve25.tau.components.layout;
 
 import com.github.wintersteve25.tau.build.BuildContext;
-import com.github.wintersteve25.tau.theme.Theme;
 import com.github.wintersteve25.tau.build.UIBuilder;
 import com.github.wintersteve25.tau.components.base.PrimitiveUIComponent;
 import com.github.wintersteve25.tau.components.base.UIComponent;
 import com.github.wintersteve25.tau.layout.Axis;
 import com.github.wintersteve25.tau.layout.Layout;
 import com.github.wintersteve25.tau.layout.LayoutSetting;
+import com.github.wintersteve25.tau.theme.Theme;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
 
 /**
@@ -59,23 +59,31 @@ public final class Align implements PrimitiveUIComponent {
         private LayoutSetting horizontal;
         private LayoutSetting vertical;
 
-        /** Creates a new align builder. */
+        /**
+         * Creates a new align builder.
+         */
         public Builder() {
         }
 
-        /** Sets horizontal alignment override. */
+        /**
+         * Sets horizontal alignment override.
+         */
         public Builder withHorizontal(LayoutSetting horizontal) {
             this.horizontal = horizontal;
             return this;
         }
 
-        /** Sets vertical alignment override. */
+        /**
+         * Sets vertical alignment override.
+         */
         public Builder withVertical(LayoutSetting vertical) {
             this.vertical = vertical;
             return this;
         }
 
-        /** Builds an align wrapper around the child. */
+        /**
+         * Builds an align wrapper around the child.
+         */
         public Align build(UIComponent child) {
             return new Align(child, horizontal, vertical);
         }

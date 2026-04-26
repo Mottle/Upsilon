@@ -1,6 +1,7 @@
 package com.github.wintersteve25.tau.components.animated;
 
 import com.github.wintersteve25.tau.build.BuildContext;
+import com.github.wintersteve25.tau.build.BuilderShell;
 import com.github.wintersteve25.tau.components.base.PrimitiveUIComponent;
 import com.github.wintersteve25.tau.components.base.UIComponent;
 import com.github.wintersteve25.tau.layout.Layout;
@@ -58,7 +59,7 @@ public class AnimatedTexture implements PrimitiveUIComponent {
         return size;
     }
 
-    public static final class Builder implements UIComponent {
+    public static final class Builder implements UIComponent, BuilderShell {
 
         private final ResourceLocation textureLocation;
         private final Variable<SimpleVec2i> uvSize;
@@ -84,7 +85,7 @@ public class AnimatedTexture implements PrimitiveUIComponent {
             this.textureSize = textureSize;
             return this;
         }
-        
+
         /**
          * Sets whether the UV region should be stretched to component size.
          */

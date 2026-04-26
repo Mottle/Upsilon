@@ -12,16 +12,8 @@ import java.util.ListIterator;
  */
 public class StringAlignUtils extends Format {
 
-    /**
-     * Alignment modes for formatted output blocks.
-     */
-    public enum Alignment {
-        LEFT, CENTER, RIGHT,
-    }
-
     private final Alignment currentAlignment;
     private final int maxChars;
-
     /**
      * Creates an align formatter.
      */
@@ -45,19 +37,16 @@ public class StringAlignUtils extends Format {
      * Formats text into fixed-width lines using the configured alignment.
      */
     @Override
-    public StringBuffer format(Object input, StringBuffer where, FieldPosition ignore)
-    {
+    public StringBuffer format(Object input, StringBuffer where, FieldPosition ignore) {
         String s = input.toString();
         List<String> strings = splitInputString(s);
         ListIterator<String> listItr = strings.listIterator();
 
-        while (listItr.hasNext())
-        {
+        while (listItr.hasNext()) {
             String wanted = listItr.next();
 
             //Get the spaces in the right place.
-            switch (currentAlignment)
-            {
+            switch (currentAlignment) {
                 case RIGHT:
                     pad(where, maxChars - wanted.length());
                     where.append(wanted);
@@ -85,7 +74,9 @@ public class StringAlignUtils extends Format {
             to.append(' ');
     }
 
-    /** Convenience formatter returning a plain string. */
+    /**
+     * Convenience formatter returning a plain string.
+     */
     public String format(String s) {
         return format(s, new StringBuffer(), null).toString();
     }
@@ -102,11 +93,17 @@ public class StringAlignUtils extends Format {
         List<String> list = new ArrayList<String>();
         if (str == null)
             return list;
-        for (int i = 0; i < str.length(); i = i + maxChars)
-        {
+        for (int i = 0; i < str.length(); i = i + maxChars) {
             int endindex = Math.min(i + maxChars, str.length());
             list.add(str.substring(i, endindex));
         }
         return list;
+    }
+
+    /**
+     * Alignment modes for formatted output blocks.
+     */
+    public enum Alignment {
+        LEFT, CENTER, RIGHT,
     }
 }

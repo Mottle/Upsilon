@@ -1,7 +1,6 @@
 package com.github.wintersteve25.tau.renderer;
 
-import com.github.wintersteve25.tau.build.BuildContext;
-import com.github.wintersteve25.tau.build.UIBuilder;
+import com.github.wintersteve25.tau.build.*;
 import com.github.wintersteve25.tau.components.base.DynamicUIComponent;
 import com.github.wintersteve25.tau.components.base.UIComponent;
 import com.github.wintersteve25.tau.layout.Layout;
@@ -21,9 +20,10 @@ import java.util.List;
  */
 public class HudUIRenderer {
     private final UIComponent uiComponent;
-    private final List<Renderable> components;
-    private final List<DynamicUIComponent> dynamicUIComponents;
     private final Theme theme;
+    private BuildContext mainContext;
+    private BuildResult activeBuild;
+    private List<DynamicUIComponent> dynamicUIComponents;
 
     private boolean built;
     private int screenWidth;
@@ -34,9 +34,10 @@ public class HudUIRenderer {
      */
     public HudUIRenderer(UIComponent uiComponent, Theme theme) {
         this.uiComponent = uiComponent;
-        this.components = new ArrayList<>();
-        this.dynamicUIComponents = new ArrayList<>();
         this.theme = theme;
+        this.mainContext = new BuildContext();
+        this.activeBuild = null;
+        this.dynamicUIComponents = new ArrayList<>();
     }
 
     /**
@@ -51,11 +52,8 @@ public class HudUIRenderer {
      */
     private void init() {
         Layout layout = new Layout(screenWidth, screenHeight);
-
-        clearDynamicComponents();
-        components.clear();
-        dynamicUIComponents.clear();
-        UIBuilder.build(layout, theme, uiComponent, new BuildContext(components, new ArrayList<>(), dynamicUIComponents, new ArrayList<>(), new ArrayList<>()));
+        BuildResult result = UIBuilder.buildTree(layout, theme, uiComponent);
+        commitFullBuild(result);
 
         built = true;
     }
@@ -67,6 +65,17 @@ public class HudUIRenderer {
         for (DynamicUIComponent dynamicUIComponent : dynamicUIComponents) {
             dynamicUIComponent.destroy();
         }
+        dynamicUIComponents.clear();
+    }
+
+    private void commitFullBuild(BuildResult result) {
+        if (activeBuild != null) {
+            UIBuilder.destroyOrphans(activeBuild.preorderMounts(), result.preorderMounts());
+        }
+        UIBuilder.promoteStagedStates(result);
+        activeBuild = result;
+        mainContext = result.context();
+        dynamicUIComponents = new ArrayList<>(mainContext.dynamicUIComponents());
     }
 
     /**
@@ -74,8 +83,23 @@ public class HudUIRenderer {
      */
     public void tick() {
         if (!built) return;
-        if (UIBuilder.tickDynamicUIComponents(dynamicUIComponents)) {
-            init();
+        if (activeBuild == null) {
+            return;
+        }
+
+        List<ComponentMount> dirtyMounts = UIBuilder.filterTopLevelDirty(UIBuilder.collectDirtyDynamicMounts(activeBuild));
+        if (dirtyMounts.isEmpty()) {
+            return;
+        }
+
+        for (ComponentMount dirtyMount : dirtyMounts) {
+            PartialCommitPlan plan = UIBuilder.planPartialCommit(dirtyMount);
+            if (plan == null) {
+                init();
+                return;
+            }
+            activeBuild = UIBuilder.applyPartialCommit(activeBuild, plan, mainContext);
+            dynamicUIComponents = new ArrayList<>(mainContext.dynamicUIComponents());
         }
     }
 
@@ -86,7 +110,7 @@ public class HudUIRenderer {
         int width = mainWindow.getGuiScaledWidth();
         int height = mainWindow.getGuiScaledHeight();
 
-        for (Renderable component : components) {
+        for (Renderable component : mainContext.renderables()) {
             component.render(graphics, 0, 0, pPartialTicks);
         }
 

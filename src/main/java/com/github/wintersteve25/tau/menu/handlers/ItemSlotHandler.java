@@ -31,8 +31,15 @@ public class ItemSlotHandler implements ISlotHandler {
     public void setupSync(TauContainerMenu menu, Inventory playerInv, int x, int y) {
         menu.addSlot(new DisablableSlot(inventory, index, x + 1, y + 1, enabled));
     }
-    
-    /** Slot implementation that can be hidden/disabled via {@link Variable}. */
+
+    @Override
+    public Object getStructureKey() {
+        return getClass().getName() + ":" + System.identityHashCode(inventory) + ":" + index;
+    }
+
+    /**
+     * Slot implementation that can be hidden/disabled via {@link Variable}.
+     */
     private static class DisablableSlot extends SlotItemHandler {
         private final Variable<Boolean> enabled;
 

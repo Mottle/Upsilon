@@ -10,10 +10,10 @@ import java.util.function.Consumer;
  * @param <T> value type
  */
 public class Variable<T> {
-    
+
+    private final List<Consumer<T>> listeners;
     private T value;
     private boolean changedSince;
-    private final List<Consumer<T>> listeners;
 
     /**
      * Creates a variable initialized with {@code initial}.

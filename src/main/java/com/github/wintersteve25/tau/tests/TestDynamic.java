@@ -22,8 +22,8 @@ public class TestDynamic extends DynamicUIComponent implements GuiEventListener 
         }
 
         return new Center(new Sized(
-            Size.staticSize(200, 200),
-            new Container.Builder()
+                Size.staticSize(200, 200),
+                new Container.Builder()
         ));
     }
 
@@ -34,11 +34,11 @@ public class TestDynamic extends DynamicUIComponent implements GuiEventListener 
     }
 
     @Override
-    public void setFocused(boolean pFocused) {
+    public boolean isFocused() {
+        return false;
     }
 
     @Override
-    public boolean isFocused() {
-        return false;
+    public void setFocused(boolean pFocused) {
     }
 }

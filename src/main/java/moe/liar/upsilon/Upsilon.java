@@ -12,9 +12,13 @@ import org.apache.logging.log4j.Logger;
  */
 @Mod(Upsilon.MOD_ID)
 public class Upsilon {
-    /** Runtime mod id and resource namespace. */
+    /**
+     * Runtime mod id and resource namespace.
+     */
     public static final String MOD_ID = "upsilon";
-    /** Shared logger configured with {@link #MOD_ID} as logger name. */
+    /**
+     * Shared logger configured with {@link #MOD_ID} as logger name.
+     */
     public static final Logger LOGGER = LogManager.getLogger(MOD_ID);
 
     /**

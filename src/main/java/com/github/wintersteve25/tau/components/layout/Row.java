@@ -1,14 +1,14 @@
 package com.github.wintersteve25.tau.components.layout;
 
 import com.github.wintersteve25.tau.build.BuildContext;
-import com.github.wintersteve25.tau.layout.LayoutSetting;
-import com.github.wintersteve25.tau.theme.Theme;
+import com.github.wintersteve25.tau.build.UIBuilder;
 import com.github.wintersteve25.tau.components.base.PrimitiveUIComponent;
 import com.github.wintersteve25.tau.components.base.UIComponent;
 import com.github.wintersteve25.tau.layout.Axis;
 import com.github.wintersteve25.tau.layout.Layout;
+import com.github.wintersteve25.tau.layout.LayoutSetting;
+import com.github.wintersteve25.tau.theme.Theme;
 import com.github.wintersteve25.tau.utils.FlexSizeBehaviour;
-import com.github.wintersteve25.tau.build.UIBuilder;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
 
 import java.util.Arrays;
@@ -26,10 +26,10 @@ public final class Row implements PrimitiveUIComponent {
     /**
      * Creates a row layout.
      *
-     * @param spacing horizontal spacing between children
+     * @param spacing       horizontal spacing between children
      * @param sizeBehaviour row width/height sizing behavior
-     * @param children child components in display order
-     * @param alignment vertical alignment applied to children
+     * @param children      child components in display order
+     * @param alignment     vertical alignment applied to children
      */
     public Row(int spacing, FlexSizeBehaviour sizeBehaviour, Iterable<UIComponent> children, LayoutSetting alignment) {
         this.children = children;
@@ -51,7 +51,7 @@ public final class Row implements PrimitiveUIComponent {
             boolean first = true;
 
             for (UIComponent child : children) {
-                SimpleVec2i childSize = UIBuilder.build(layout.copy(), theme, child, new BuildContext());
+                SimpleVec2i childSize = UIBuilder.measure(layout.copy(), theme, child);
                 if (!first) size.x += spacing;
                 first = false;
                 size.x += childSize.x;
@@ -87,34 +87,46 @@ public final class Row implements PrimitiveUIComponent {
         private FlexSizeBehaviour sizeBehaviour;
         private LayoutSetting alignment;
 
-        /** Creates a new row builder. */
+        /**
+         * Creates a new row builder.
+         */
         public Builder() {
         }
 
-        /** Sets horizontal spacing between children. */
+        /**
+         * Sets horizontal spacing between children.
+         */
         public Builder withSpacing(int spacing) {
             this.spacing = spacing;
             return this;
         }
 
-        /** Sets size behavior used by the row container. */
+        /**
+         * Sets size behavior used by the row container.
+         */
         public Builder withSizeBehaviour(FlexSizeBehaviour horizontalSizeBehaviour) {
             this.sizeBehaviour = horizontalSizeBehaviour;
             return this;
         }
 
-        /** Sets vertical alignment used for children inside the row. */
+        /**
+         * Sets vertical alignment used for children inside the row.
+         */
         public Builder withAlignment(LayoutSetting alignment) {
             this.alignment = alignment;
             return this;
         }
 
-        /** Builds a row from vararg children. */
+        /**
+         * Builds a row from vararg children.
+         */
         public Row build(UIComponent... children) {
             return build(Arrays.asList(children));
         }
 
-        /** Builds a row from iterable children. */
+        /**
+         * Builds a row from iterable children.
+         */
         public Row build(Iterable<UIComponent> children) {
             return new Row(spacing,
                     sizeBehaviour == null

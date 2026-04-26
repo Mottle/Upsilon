@@ -14,12 +14,12 @@ public class TestPadding implements UIComponent {
     @Override
     public UIComponent build(Layout layout, Theme theme) {
         return new Center(new Sized(
-            Size.staticSize(200, 200),
-            new Container.Builder()
-                .withChild(new Padding(
-                    new Pad.Builder().all(5).build(),
-                    new Container.Builder()
-                ))
+                Size.staticSize(200, 200),
+                new Container.Builder()
+                        .withChild(new Padding(
+                                new Pad.Builder().all(5).build(),
+                                new Container.Builder()
+                        ))
         ));
     }
 }

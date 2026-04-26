@@ -20,7 +20,9 @@ import java.util.Optional;
  * Default vanilla-like theme implementation for Upsilon components.
  */
 public class MinecraftTheme implements Theme {
-    /** Shared singleton instance of the default theme. */
+    /**
+     * Shared singleton instance of the default theme.
+     */
     public static final Theme INSTANCE = new MinecraftTheme();
 
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(Upsilon.MOD_ID, "textures/gui/container.png");
@@ -76,7 +78,7 @@ public class MinecraftTheme implements Theme {
             int i = 0;
             int j = pComponents.size() == 1 ? -2 : 0;
 
-            for(ClientTooltipComponent clienttooltipcomponent : pComponents) {
+            for (ClientTooltipComponent clienttooltipcomponent : pComponents) {
                 int k = clienttooltipcomponent.getWidth(preEvent.getFont());
                 if (k > i) {
                     i = k;
@@ -97,7 +99,7 @@ public class MinecraftTheme implements Theme {
             graphics.pose().translate(0.0F, 0.0F, 400.0F);
             int k1 = i1;
 
-            for(int l1 = 0; l1 < pComponents.size(); ++l1) {
+            for (int l1 = 0; l1 < pComponents.size(); ++l1) {
                 ClientTooltipComponent clienttooltipcomponent1 = pComponents.get(l1);
                 clienttooltipcomponent1.renderText(preEvent.getFont(), l, k1, graphics.pose().last().pose(), graphics.bufferSource());
                 k1 += clienttooltipcomponent1.getHeight() + (l1 == 0 ? 2 : 0);
@@ -105,7 +107,7 @@ public class MinecraftTheme implements Theme {
 
             k1 = i1;
 
-            for(int k2 = 0; k2 < pComponents.size(); ++k2) {
+            for (int k2 = 0; k2 < pComponents.size(); ++k2) {
                 ClientTooltipComponent clienttooltipcomponent2 = pComponents.get(k2);
                 clienttooltipcomponent2.renderImage(preEvent.getFont(), l, k1, graphics);
                 k1 += clienttooltipcomponent2.getHeight() + (k2 == 0 ? 2 : 0);

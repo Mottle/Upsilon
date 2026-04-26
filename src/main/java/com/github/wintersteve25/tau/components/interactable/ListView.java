@@ -1,7 +1,6 @@
 package com.github.wintersteve25.tau.components.interactable;
 
-import com.github.wintersteve25.tau.build.BuildContext;
-import com.github.wintersteve25.tau.build.UIBuilder;
+import com.github.wintersteve25.tau.build.*;
 import com.github.wintersteve25.tau.components.base.DynamicUIComponent;
 import com.github.wintersteve25.tau.components.base.PrimitiveUIComponent;
 import com.github.wintersteve25.tau.components.base.UIComponent;
@@ -16,8 +15,8 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
-import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -31,7 +30,7 @@ import java.util.Optional;
  * The component caches measured content height per viewport size and updates
  * scroll offset without requesting a full dynamic rebuild on each wheel event.
  */
-public final class ListView extends DynamicUIComponent implements PrimitiveUIComponent, ContainerEventHandler {
+public final class ListView extends DynamicUIComponent implements PrimitiveUIComponent, ContainerEventHandler, MountStateHost<ListView.ListViewMountState> {
 
     private static final int scrollSensitivity = 8;
 
@@ -40,20 +39,14 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
     private final int spacing;
 
     private int scrollOffset;
-    private int maxScroll;
-
-    private SimpleVec2i size;
-    private SimpleVec2i position;
-    private final List<GuiEventListener> childEventListeners = new ArrayList<>();
-    private int measuredContentHeight = -1;
-    private SimpleVec2i measuredViewport = SimpleVec2i.zero();
+    private ListViewMountState activeMountState;
 
     /**
      * Creates a list view.
      *
-     * @param children list entries rendered top-to-bottom
+     * @param children          list entries rendered top-to-bottom
      * @param childrenAlignment horizontal alignment for each child row
-     * @param spacing vertical spacing between entries
+     * @param spacing           vertical spacing between entries
      */
     public ListView(List<UIComponent> children, LayoutSetting childrenAlignment, int spacing) {
         this.children = children;
@@ -67,23 +60,36 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
      */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
-        size = layout.getSize();
-        position = layout.getPosition(size);
+        BuildSession session = UIBuilder.currentSession();
+        ListViewMountState state = null;
+        if (session != null && session.getMode() == BuildMode.MOUNTED_COMMITTABLE) {
+            state = session.getOrCreateStagedState(this, ListViewMountState::new);
+        }
+
+        SimpleVec2i size = layout.getSize();
+        SimpleVec2i position = layout.getPosition(size);
+
+        int measuredContentHeight = state != null ? state.measuredContentHeight : -1;
+        SimpleVec2i measuredViewport = state != null ? state.measuredViewport : SimpleVec2i.zero();
 
         if (measuredContentHeight == -1 || measuredViewport.x != size.x || measuredViewport.y != size.y) {
             Column.Builder measureColumn = new Column.Builder()
                     .withSpacing(spacing)
                     .withAlignment(childrenAlignment);
-            SimpleVec2i childrenSize = UIBuilder.build(layout.copy(), theme, measureColumn.build(children), new BuildContext());
+            SimpleVec2i childrenSize = UIBuilder.measure(layout.copy(), theme, measureColumn.build(children));
             measuredContentHeight = childrenSize.y;
             measuredViewport = new SimpleVec2i(size.x, size.y);
         }
 
-        maxScroll = Math.max(0, measuredContentHeight - size.y + 1); // 1 for padding
+        int maxScroll = Math.max(0, measuredContentHeight - size.y + 1); // 1 for padding
         scrollOffset = clamp(scrollOffset, -maxScroll, 0);
 
         List<Renderable> childRenderables = new ArrayList<>();
-        childEventListeners.clear();
+        List<GuiEventListener> childEventListeners = new ArrayList<>();
+        if (state != null) {
+            state.childEventListeners.clear();
+            childEventListeners = state.childEventListeners;
+        }
 
         BuildContext innerContext = new BuildContext(
                 childRenderables,
@@ -99,12 +105,18 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
 
         int pushedOffsets = 0;
         try {
+            if (session != null) {
+                session.pushContext(innerContext);
+            }
             for (UIComponent child : children) {
                 SimpleVec2i childSize = UIBuilder.build(childLayout, theme, child, innerContext);
                 childLayout.pushOffset(Axis.VERTICAL, childSize.y + spacing);
                 pushedOffsets++;
             }
         } finally {
+            if (session != null) {
+                session.popContext();
+            }
             for (int i = 0; i < pushedOffsets; i++) {
                 childLayout.popOffset(Axis.VERTICAL);
             }
@@ -119,7 +131,20 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
         int glWidth = (int) (size.x * guiScale);
         int glHeight = (int) (size.y * guiScale);
 
-        context.renderables().add((graphics, pMouseX, pMouseY, pPartialTicks) -> renderClipped(graphics, childRenderables, glX, glY, glWidth, glHeight, pMouseX, pMouseY, pPartialTicks));
+        if (session != null) {
+            session.addRenderable((graphics, pMouseX, pMouseY, pPartialTicks) -> renderClipped(graphics, childRenderables, glX, glY, glWidth, glHeight, pMouseX, pMouseY, pPartialTicks));
+        } else {
+            context.renderables().add((graphics, pMouseX, pMouseY, pPartialTicks) -> renderClipped(graphics, childRenderables, glX, glY, glWidth, glHeight, pMouseX, pMouseY, pPartialTicks));
+        }
+
+        if (state != null) {
+            state.size = size;
+            state.position = position;
+            state.maxScroll = maxScroll;
+            state.measuredContentHeight = measuredContentHeight;
+            state.measuredViewport = measuredViewport;
+            state.childRenderables = childRenderables;
+        }
 
         return size;
     }
@@ -133,7 +158,12 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
             return false;
         }
 
-        if (scrollOffset >= maxScroll && pScrollY < 0) {
+        ListViewMountState state = activeMountState;
+        if (state == null) {
+            return false;
+        }
+
+        if (scrollOffset >= state.maxScroll && pScrollY < 0) {
             return false;
         }
 
@@ -142,7 +172,7 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
         }
 
         scrollOffset += pScrollY > 0 ? scrollSensitivity : -scrollSensitivity;
-        scrollOffset = clamp(scrollOffset, -maxScroll, 0);
+        scrollOffset = clamp(scrollOffset, -state.maxScroll, 0);
 
         return true;
     }
@@ -152,14 +182,8 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
      */
     @Override
     public boolean isMouseOver(double pMouseX, double pMouseY) {
-        return SimpleVec2i.within((int) pMouseX, (int) pMouseY, position, size);
-    }
-
-    /**
-     * List view does not track a focused state directly.
-     */
-    @Override
-    public void setFocused(boolean pFocused) {
+        ListViewMountState state = activeMountState;
+        return state != null && SimpleVec2i.within((int) pMouseX, (int) pMouseY, state.position, state.size);
     }
 
     /**
@@ -175,7 +199,7 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
      */
     @Override
     public List<? extends GuiEventListener> children() {
-        return childEventListeners;
+        return activeMountState == null ? List.of() : activeMountState.childEventListeners;
     }
 
     /**
@@ -185,6 +209,13 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
     @Override
     public GuiEventListener getFocused() {
         return null;
+    }
+
+    /**
+     * List view does not track a focused state directly.
+     */
+    @Override
+    public void setFocused(boolean pFocused) {
     }
 
     /**
@@ -267,17 +298,29 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
         return Math.min(x, max);
     }
 
+    @Override
+    public ListViewMountState getActiveMountState() {
+        return activeMountState;
+    }
+
+    @Override
+    public void setActiveMountState(ListViewMountState state) {
+        this.activeMountState = state;
+    }
+
     public static final class Builder {
         private int spacing;
         private LayoutSetting childrenAlignment;
 
-        /** Creates a new list view builder. */
+        /**
+         * Creates a new list view builder.
+         */
         public Builder() {
         }
 
         /**
-        * Sets vertical spacing between list children.
-        */
+         * Sets vertical spacing between list children.
+         */
         public Builder withSpacing(int spacing) {
             this.spacing = spacing;
             return this;
@@ -304,5 +347,15 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
         public ListView build(List<UIComponent> children) {
             return new ListView(children, childrenAlignment == null ? LayoutSetting.CENTER : childrenAlignment, spacing);
         }
+    }
+
+    public static final class ListViewMountState implements MountState {
+        SimpleVec2i size = SimpleVec2i.zero();
+        SimpleVec2i position = SimpleVec2i.zero();
+        int maxScroll;
+        int measuredContentHeight = -1;
+        SimpleVec2i measuredViewport = SimpleVec2i.zero();
+        List<GuiEventListener> childEventListeners = new ArrayList<>();
+        List<Renderable> childRenderables = new ArrayList<>();
     }
 }

@@ -13,17 +13,23 @@ public class ItemRenderProvider implements RenderProvider {
 
     private final ItemStack itemStack;
 
-    /** Creates a renderer from an existing item stack. */
+    /**
+     * Creates a renderer from an existing item stack.
+     */
     public ItemRenderProvider(ItemStack itemStack) {
         this.itemStack = itemStack;
     }
 
-    /** Creates a renderer from an item instance. */
+    /**
+     * Creates a renderer from an item instance.
+     */
     public ItemRenderProvider(Item item) {
         this(new ItemStack(item));
     }
 
-    /** Creates a renderer from a block's item form. */
+    /**
+     * Creates a renderer from a block's item form.
+     */
     public ItemRenderProvider(Block block) {
         this(new ItemStack(block.asItem()));
     }

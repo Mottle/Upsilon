@@ -1,17 +1,18 @@
 package com.github.wintersteve25.tau.components.utils;
 
 import com.github.wintersteve25.tau.build.BuildContext;
+import com.github.wintersteve25.tau.build.BuildSession;
+import com.github.wintersteve25.tau.build.UIBuilder;
+import com.github.wintersteve25.tau.components.base.PrimitiveUIComponent;
+import com.github.wintersteve25.tau.components.base.UIComponent;
+import com.github.wintersteve25.tau.layout.Layout;
 import com.github.wintersteve25.tau.theme.Theme;
+import com.github.wintersteve25.tau.utils.SimpleVec2i;
+import com.github.wintersteve25.tau.utils.Size;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Renderable;
-import com.github.wintersteve25.tau.components.base.PrimitiveUIComponent;
-import com.github.wintersteve25.tau.components.base.UIComponent;
-import com.github.wintersteve25.tau.layout.Layout;
-import com.github.wintersteve25.tau.utils.Size;
-import com.github.wintersteve25.tau.build.UIBuilder;
-import com.github.wintersteve25.tau.utils.SimpleVec2i;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,9 +29,9 @@ public final class Clip implements PrimitiveUIComponent {
     /**
      * Creates a clip component.
      *
-     * @param child wrapped child component
+     * @param child  wrapped child component
      * @param offset clip origin offset from child position
-     * @param size clip rectangle size policy
+     * @param size   clip rectangle size policy
      */
     public Clip(UIComponent child, SimpleVec2i offset, Size size) {
         this.child = child;
@@ -46,7 +47,18 @@ public final class Clip implements PrimitiveUIComponent {
 
         List<Renderable> childrenRenderables = new ArrayList<>();
         BuildContext innerContext = new BuildContext(childrenRenderables, context.tooltips(), context.dynamicUIComponents(), context.eventListeners(), context.slots());
-        SimpleVec2i childSize = UIBuilder.build(layout, theme, child, innerContext);
+        BuildSession session = UIBuilder.currentSession();
+        SimpleVec2i childSize;
+        if (session != null) {
+            session.pushContext(innerContext);
+            try {
+                childSize = UIBuilder.build(layout, theme, child, innerContext);
+            } finally {
+                session.popContext();
+            }
+        } else {
+            childSize = UIBuilder.build(layout, theme, child, innerContext);
+        }
 
         Window window = Minecraft.getInstance().getWindow();
 
@@ -61,7 +73,7 @@ public final class Clip implements PrimitiveUIComponent {
         int glWidth = (int) (scaledClipSize.x * guiScale);
         int glHeight = (int) (scaledClipSize.y * guiScale);
 
-        context.renderables().add((graphics, pMouseX, pMouseY, pPartialTicks) -> {
+        Renderable clipped = (graphics, pMouseX, pMouseY, pPartialTicks) -> {
             RenderSystem.enableScissor(glX, glY, glWidth, glHeight);
 
             for (Renderable renderable : childrenRenderables) {
@@ -69,7 +81,13 @@ public final class Clip implements PrimitiveUIComponent {
             }
 
             RenderSystem.disableScissor();
-        });
+        };
+
+        if (session != null) {
+            session.addRenderable(clipped);
+        } else {
+            context.renderables().add(clipped);
+        }
 
         return childSize;
     }
@@ -78,23 +96,31 @@ public final class Clip implements PrimitiveUIComponent {
         private SimpleVec2i offset;
         private Size size;
 
-        /** Creates a new clip builder. */
+        /**
+         * Creates a new clip builder.
+         */
         public Builder() {
         }
 
-        /** Sets clip origin offset relative to child position. */
+        /**
+         * Sets clip origin offset relative to child position.
+         */
         public Builder withOffset(SimpleVec2i offset) {
             this.offset = offset;
             return this;
         }
 
-        /** Sets clip size policy. */
+        /**
+         * Sets clip size policy.
+         */
         public Builder withSize(Size size) {
             this.size = size;
             return this;
         }
 
-        /** Builds a clip wrapper around the given child. */
+        /**
+         * Builds a clip wrapper around the given child.
+         */
         public Clip build(UIComponent child) {
             return new Clip(child, offset == null ? SimpleVec2i.zero() : offset, size == null ? Size.percentage(1f) : size);
         }

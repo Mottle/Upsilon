@@ -29,8 +29,8 @@ public interface UIMenu {
     /**
      * Builds UI components for this menu.
      *
-     * @param layout menu layout constrained to {@link #getSize()}
-     * @param theme active theme used by components
+     * @param layout        menu layout constrained to {@link #getSize()}
+     * @param theme         active theme used by components
      * @param containerMenu backing container instance
      * @return root UI component tree for rendering/input
      */
@@ -77,6 +77,13 @@ public interface UIMenu {
      */
     default List<? extends ISlotHandler> getSlots(TauContainerMenu menu) {
         return List.of();
+    }
+
+    /**
+     * Returns a coarse-grained version used to detect slot structure changes.
+     */
+    default int getSlotStructureVersion(TauContainerMenu menu) {
+        return 0;
     }
 
     /**

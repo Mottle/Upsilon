@@ -1,20 +1,20 @@
 package com.github.wintersteve25.tau.components.render;
 
-import com.github.wintersteve25.tau.build.BuildContext;
-import com.github.wintersteve25.tau.menu.MenuSlot;
-import com.github.wintersteve25.tau.layout.Axis;
-import com.github.wintersteve25.tau.theme.Theme;
-import moe.liar.upsilon.Upsilon;
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.gui.components.events.ContainerEventHandler;
-import net.minecraft.client.gui.components.events.GuiEventListener;
-import net.minecraft.client.gui.components.Renderable;
+import com.github.wintersteve25.tau.build.*;
 import com.github.wintersteve25.tau.components.base.PrimitiveUIComponent;
 import com.github.wintersteve25.tau.components.base.UIComponent;
+import com.github.wintersteve25.tau.layout.Axis;
 import com.github.wintersteve25.tau.layout.Layout;
-import com.github.wintersteve25.tau.build.UIBuilder;
+import com.github.wintersteve25.tau.menu.MenuSlot;
+import com.github.wintersteve25.tau.theme.Theme;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
 import com.github.wintersteve25.tau.utils.Transformation;
+import com.mojang.blaze3d.vertex.PoseStack;
+import moe.liar.upsilon.Upsilon;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Renderable;
+import net.minecraft.client.gui.components.events.ContainerEventHandler;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2d;
 import org.joml.Vector3f;
@@ -30,14 +30,11 @@ import java.util.Optional;
  * Translation transforms are applied in layout space for reliable hit-testing.
  * Non-translation transforms are rendered as visual-only best effort.
  */
-public final class Transform implements PrimitiveUIComponent, ContainerEventHandler {
+public final class Transform implements PrimitiveUIComponent, ContainerEventHandler, MountStateHost<Transform.TransformMountState> {
 
     private final UIComponent child;
     private final Iterable<Transformation> transformations;
-    private final List<GuiEventListener> childrenEventListeners;
-
-    private boolean dragging;
-    private GuiEventListener focused;
+    private TransformMountState activeMountState;
 
     /**
      * Creates a transform wrapper from vararg transformations.
@@ -52,7 +49,6 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
     public Transform(UIComponent child, Iterable<Transformation> transformations) {
         this.child = child;
         this.transformations = transformations;
-        this.childrenEventListeners = new ArrayList<>();
     }
 
     /**
@@ -75,51 +71,80 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
             Upsilon.LOGGER.warn("Transform only guarantees correct layout/input for translation transforms; applying non-translation transforms as visual-only best effort");
         }
 
-        List<Renderable> children = new ArrayList<>();
-        List<MenuSlot<?>> slots = new ArrayList<>();
+        List<Renderable> childRenderables = new ArrayList<>();
+        List<MenuSlot<?>> transformedSlots = new ArrayList<>();
+        List<GuiEventListener> childListeners = new ArrayList<>();
 
-        childrenEventListeners.clear();
-        BuildContext innerContext = new BuildContext(children, context.tooltips(), context.dynamicUIComponents(), childrenEventListeners, slots);
+        BuildSession session = UIBuilder.currentSession();
+        if (session != null && session.getMode() == BuildMode.MOUNTED_COMMITTABLE) {
+            TransformMountState staged = session.getOrCreateStagedState(this, TransformMountState::new);
+            staged.childrenEventListeners.clear();
+            childListeners = staged.childrenEventListeners;
+        }
 
-        // Translation participates in layout for consistent input and slot mapping.
+        BuildContext innerContext = new BuildContext(
+                childRenderables,
+                context.tooltips(),
+                context.dynamicUIComponents(),
+                childListeners,
+                transformedSlots
+        );
+
         Layout transformedLayout = layout.copy();
         transformedLayout.pushOffset(Axis.HORIZONTAL, Math.round(translation.x));
         transformedLayout.pushOffset(Axis.VERTICAL, Math.round(translation.y));
 
         SimpleVec2i size;
         try {
-            size = UIBuilder.build(transformedLayout, theme, child, innerContext);
+            if (session != null) {
+                session.pushContext(innerContext);
+            }
+            try {
+                size = UIBuilder.build(transformedLayout, theme, child, innerContext);
+            } finally {
+                if (session != null) {
+                    session.popContext();
+                }
+            }
         } finally {
             transformedLayout.popOffset(Axis.VERTICAL);
             transformedLayout.popOffset(Axis.HORIZONTAL);
         }
 
-        // Non-translation transforms are visual-only best effort.
-        context.renderables().add((graphics, pMouseX, pMouseY, pPartialTicks) -> {
-            PoseStack poseStack = graphics.pose();
-            poseStack.pushPose();
+        if (session != null) {
+            session.addRenderable((graphics, pMouseX, pMouseY, pPartialTicks) -> renderWithTransforms(graphics, childRenderables, visualOnlyTransforms, pMouseX, pMouseY, pPartialTicks));
+        } else {
+            context.renderables().add((graphics, pMouseX, pMouseY, pPartialTicks) -> renderWithTransforms(graphics, childRenderables, visualOnlyTransforms, pMouseX, pMouseY, pPartialTicks));
+        }
 
+        for (MenuSlot<?> slot : transformedSlots) {
+            for (Transformation transformation : visualOnlyTransforms) {
+                transformation.transformPoint(slot.pos());
+            }
+            if (session != null) {
+                session.addSlot(slot);
+            } else {
+                context.slots().add(slot);
+            }
+        }
+
+        return size;
+    }
+
+    private void renderWithTransforms(GuiGraphics graphics, List<Renderable> renderables, List<Transformation> visualOnlyTransforms, int mouseX, int mouseY, float partialTicks) {
+        PoseStack poseStack = graphics.pose();
+        poseStack.pushPose();
+        try {
             for (Transformation transformation : visualOnlyTransforms) {
                 transformation.transform(poseStack);
             }
 
-            for (Renderable renderable : children) {
-                renderable.render(graphics, pMouseX, pMouseY, pPartialTicks);
+            for (Renderable renderable : renderables) {
+                renderable.render(graphics, mouseX, mouseY, partialTicks);
             }
-
+        } finally {
             poseStack.popPose();
-        });
-
-        // Slots are adjusted only for visual-only transforms.
-        for (MenuSlot<?> slot : slots) {
-            for (Transformation transformation : visualOnlyTransforms) {
-                transformation.transformPoint(slot.pos());
-            }
-
-            context.slots().add(slot);
         }
-
-        return size;
     }
 
     /**
@@ -127,7 +152,7 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
      */
     @Override
     public List<? extends GuiEventListener> children() {
-        return childrenEventListeners;
+        return activeMountState == null ? List.of() : activeMountState.childrenEventListeners;
     }
 
     /**
@@ -135,7 +160,7 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
      */
     @Override
     public boolean isDragging() {
-        return dragging;
+        return activeMountState != null && activeMountState.dragging;
     }
 
     /**
@@ -143,7 +168,9 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
      */
     @Override
     public void setDragging(boolean pIsDragging) {
-        dragging = pIsDragging;
+        if (activeMountState != null) {
+            activeMountState.dragging = pIsDragging;
+        }
     }
 
     /**
@@ -152,7 +179,7 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
     @Nullable
     @Override
     public GuiEventListener getFocused() {
-        return focused;
+        return activeMountState == null ? null : activeMountState.focused;
     }
 
     /**
@@ -160,7 +187,9 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
      */
     @Override
     public void setFocused(@Nullable GuiEventListener pFocused) {
-        focused = pFocused;
+        if (activeMountState != null) {
+            activeMountState.focused = pFocused;
+        }
     }
 
     /**
@@ -168,14 +197,7 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
      */
     @Override
     public Optional<GuiEventListener> getChildAt(double pMouseX, double pMouseY) {
-        Vector2d mousePos = new Vector2d(pMouseX, pMouseY);
-
-        for (Transformation transformation : transformations) {
-            if (!transformation.isTranslationOnly()) {
-                transformation.transformPoint(mousePos);
-            }
-        }
-
+        Vector2d mousePos = transformedMouse(pMouseX, pMouseY);
         return ContainerEventHandler.super.getChildAt(mousePos.x, mousePos.y);
     }
 
@@ -184,14 +206,7 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
      */
     @Override
     public boolean mouseClicked(double pMouseX, double pMouseY, int pButton) {
-        Vector2d mousePos = new Vector2d(pMouseX, pMouseY);
-
-        for (Transformation transformation : transformations) {
-            if (!transformation.isTranslationOnly()) {
-                transformation.transformPoint(mousePos);
-            }
-        }
-
+        Vector2d mousePos = transformedMouse(pMouseX, pMouseY);
         return ContainerEventHandler.super.mouseClicked(mousePos.x, mousePos.y, pButton);
     }
 
@@ -200,14 +215,7 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
      */
     @Override
     public boolean mouseReleased(double pMouseX, double pMouseY, int pButton) {
-        Vector2d mousePos = new Vector2d(pMouseX, pMouseY);
-
-        for (Transformation transformation : transformations) {
-            if (!transformation.isTranslationOnly()) {
-                transformation.transformPoint(mousePos);
-            }
-        }
-
+        Vector2d mousePos = transformedMouse(pMouseX, pMouseY);
         return ContainerEventHandler.super.mouseReleased(mousePos.x, mousePos.y, pButton);
     }
 
@@ -216,14 +224,7 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
      */
     @Override
     public boolean mouseDragged(double pMouseX, double pMouseY, int pButton, double pDragX, double pDragY) {
-        Vector2d mousePos = new Vector2d(pMouseX, pMouseY);
-
-        for (Transformation transformation : transformations) {
-            if (!transformation.isTranslationOnly()) {
-                transformation.transformPoint(mousePos);
-            }
-        }
-
+        Vector2d mousePos = transformedMouse(pMouseX, pMouseY);
         return ContainerEventHandler.super.mouseDragged(mousePos.x, mousePos.y, pButton, pDragX, pDragY);
     }
 
@@ -232,14 +233,33 @@ public final class Transform implements PrimitiveUIComponent, ContainerEventHand
      */
     @Override
     public boolean mouseScrolled(double pMouseX, double pMouseY, double pScrollX, double pScrollY) {
-        Vector2d mousePos = new Vector2d(pMouseX, pMouseY);
+        Vector2d mousePos = transformedMouse(pMouseX, pMouseY);
+        return ContainerEventHandler.super.mouseScrolled(mousePos.x, mousePos.y, pScrollX, pScrollY);
+    }
 
+    private Vector2d transformedMouse(double pMouseX, double pMouseY) {
+        Vector2d mousePos = new Vector2d(pMouseX, pMouseY);
         for (Transformation transformation : transformations) {
             if (!transformation.isTranslationOnly()) {
                 transformation.transformPoint(mousePos);
             }
         }
+        return mousePos;
+    }
 
-        return ContainerEventHandler.super.mouseScrolled(mousePos.x, mousePos.y, pScrollX, pScrollY);
+    @Override
+    public TransformMountState getActiveMountState() {
+        return activeMountState;
+    }
+
+    @Override
+    public void setActiveMountState(TransformMountState state) {
+        this.activeMountState = state;
+    }
+
+    public static final class TransformMountState implements MountState {
+        final List<GuiEventListener> childrenEventListeners = new ArrayList<>();
+        boolean dragging;
+        GuiEventListener focused;
     }
 }

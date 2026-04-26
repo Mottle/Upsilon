@@ -10,10 +10,12 @@ import org.joml.Matrix4f;
  * Tooltip component that renders text from a live {@link Variable} value.
  */
 public class AnimatedClientTooltip implements ClientTooltipComponent {
-    
+
     private Variable<Component> text;
 
-    /** Creates an animated tooltip bound to a reactive text value. */
+    /**
+     * Creates an animated tooltip bound to a reactive text value.
+     */
     public AnimatedClientTooltip(Variable<Component> text) {
         this.text = text;
     }
@@ -23,7 +25,7 @@ public class AnimatedClientTooltip implements ClientTooltipComponent {
      */
     @Override
     public void renderText(Font font, int mouseX, int mouseY, Matrix4f matrix, MultiBufferSource.BufferSource bufferSource) {
-        font.drawInBatch(this.text.getValue(), (float)mouseX, (float)mouseY, -1, true, matrix, bufferSource, Font.DisplayMode.NORMAL, 0, 15728880);
+        font.drawInBatch(this.text.getValue(), (float) mouseX, (float) mouseY, -1, true, matrix, bufferSource, Font.DisplayMode.NORMAL, 0, 15728880);
     }
 
     /**

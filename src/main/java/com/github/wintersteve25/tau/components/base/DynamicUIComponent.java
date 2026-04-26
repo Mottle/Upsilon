@@ -12,7 +12,9 @@ import com.github.wintersteve25.tau.theme.Theme;
  */
 public abstract class DynamicUIComponent implements UIComponent {
 
-    /** Indicates that the owning renderer should rebuild the UI tree. */
+    /**
+     * Indicates that the owning renderer should rebuild the UI tree.
+     */
     public boolean dirty;
 
     /**
@@ -48,8 +50,8 @@ public abstract class DynamicUIComponent implements UIComponent {
      * Subclasses may override to react to build start.
      *
      * @param context active build context
-     * @param layout current layout snapshot
-     * @param theme active theme
+     * @param layout  current layout snapshot
+     * @param theme   active theme
      */
     public void buildDynamic(BuildContext context, Layout layout, Theme theme) {
     }

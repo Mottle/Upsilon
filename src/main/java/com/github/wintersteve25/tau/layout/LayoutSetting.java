@@ -6,11 +6,17 @@ package com.github.wintersteve25.tau.layout;
  */
 @FunctionalInterface
 public interface LayoutSetting {
-    /** Places component at the start edge. */
+    /**
+     * Places component at the start edge.
+     */
     LayoutSetting START = (maxLength, componentLength) -> 0;
-    /** Places component centered in the available length. */
+    /**
+     * Places component centered in the available length.
+     */
     LayoutSetting CENTER = (maxLength, componentLength) -> (maxLength - componentLength) / 2;
-    /** Places component at the end edge. */
+    /**
+     * Places component at the end edge.
+     */
     LayoutSetting END = (maxLength, componentLength) -> maxLength - componentLength;
 
     /**
@@ -26,7 +32,7 @@ public interface LayoutSetting {
     /**
      * Computes placement offset.
      *
-     * @param maxLength available parent length
+     * @param maxLength       available parent length
      * @param componentLength component length
      * @return placement offset from parent start edge
      */

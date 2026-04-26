@@ -49,7 +49,7 @@ public class StackedAxialSettings<T> {
     /**
      * Pushes a value onto the requested axis stack.
      *
-     * @param axis target axis
+     * @param axis    target axis
      * @param setting value to push
      */
     public void push(Axis axis, T setting) {

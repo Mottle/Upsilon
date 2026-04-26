@@ -1,14 +1,14 @@
 package com.github.wintersteve25.tau.components.layout;
 
 import com.github.wintersteve25.tau.build.BuildContext;
-import com.github.wintersteve25.tau.layout.LayoutSetting;
-import com.github.wintersteve25.tau.theme.Theme;
+import com.github.wintersteve25.tau.build.UIBuilder;
 import com.github.wintersteve25.tau.components.base.PrimitiveUIComponent;
 import com.github.wintersteve25.tau.components.base.UIComponent;
 import com.github.wintersteve25.tau.layout.Axis;
 import com.github.wintersteve25.tau.layout.Layout;
+import com.github.wintersteve25.tau.layout.LayoutSetting;
+import com.github.wintersteve25.tau.theme.Theme;
 import com.github.wintersteve25.tau.utils.FlexSizeBehaviour;
-import com.github.wintersteve25.tau.build.UIBuilder;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
 
 import java.util.Arrays;
@@ -26,10 +26,10 @@ public final class Column implements PrimitiveUIComponent {
     /**
      * Creates a column layout.
      *
-     * @param spacing vertical spacing between children
+     * @param spacing       vertical spacing between children
      * @param sizeBehaviour column sizing behavior
-     * @param children child components in display order
-     * @param alignment horizontal alignment applied to children
+     * @param children      child components in display order
+     * @param alignment     horizontal alignment applied to children
      */
     public Column(int spacing, FlexSizeBehaviour sizeBehaviour, Iterable<UIComponent> children, LayoutSetting alignment) {
         this.children = children;
@@ -51,8 +51,7 @@ public final class Column implements PrimitiveUIComponent {
             boolean first = true;
 
             for (UIComponent child : children) {
-                // todo avoid building twice?
-                SimpleVec2i childSize = UIBuilder.build(layout.copy(), theme, child, new BuildContext());
+                SimpleVec2i childSize = UIBuilder.measure(layout.copy(), theme, child);
                 if (!first) size.y += spacing;
                 first = false;
                 size.y += childSize.y;
@@ -88,34 +87,46 @@ public final class Column implements PrimitiveUIComponent {
         private FlexSizeBehaviour sizeBehaviour;
         private LayoutSetting alignment;
 
-        /** Creates a new column builder. */
+        /**
+         * Creates a new column builder.
+         */
         public Builder() {
         }
 
-        /** Sets vertical spacing between children. */
+        /**
+         * Sets vertical spacing between children.
+         */
         public Builder withSpacing(int spacing) {
             this.spacing = spacing;
             return this;
         }
 
-        /** Sets size behavior used by the column container. */
+        /**
+         * Sets size behavior used by the column container.
+         */
         public Builder withSizeBehaviour(FlexSizeBehaviour sizeBehaviour) {
             this.sizeBehaviour = sizeBehaviour;
             return this;
         }
 
-        /** Sets horizontal alignment used for children inside the column. */
+        /**
+         * Sets horizontal alignment used for children inside the column.
+         */
         public Builder withAlignment(LayoutSetting alignment) {
             this.alignment = alignment;
             return this;
         }
 
-        /** Builds a column from vararg children. */
+        /**
+         * Builds a column from vararg children.
+         */
         public Column build(UIComponent... children) {
             return build(Arrays.asList(children));
         }
 
-        /** Builds a column from iterable children. */
+        /**
+         * Builds a column from iterable children.
+         */
         public Column build(Iterable<UIComponent> children) {
             return new Column(spacing,
                     sizeBehaviour == null

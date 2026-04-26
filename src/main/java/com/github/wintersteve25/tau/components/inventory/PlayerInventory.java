@@ -14,8 +14,8 @@ import com.github.wintersteve25.tau.utils.Variable;
  */
 public class PlayerInventory implements PrimitiveUIComponent {
 
-    private final Variable<Boolean> enabled;
     private static final SimpleVec2i SIZE = new SimpleVec2i(162, 76); // 4 rows with 1 hotbar
+    private final Variable<Boolean> enabled;
 
     /**
      * Creates a player inventory component with enable/disable state.

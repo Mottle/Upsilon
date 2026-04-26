@@ -1,6 +1,9 @@
 package com.github.wintersteve25.tau.renderer;
 
-import com.github.wintersteve25.tau.build.BuildContext;
+import com.github.wintersteve25.tau.build.*;
+import com.github.wintersteve25.tau.components.base.DynamicUIComponent;
+import com.github.wintersteve25.tau.components.base.UIComponent;
+import com.github.wintersteve25.tau.layout.Layout;
 import com.github.wintersteve25.tau.theme.MinecraftTheme;
 import com.github.wintersteve25.tau.theme.Theme;
 import net.minecraft.client.gui.GuiGraphics;
@@ -8,10 +11,6 @@ import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import com.github.wintersteve25.tau.components.base.DynamicUIComponent;
-import com.github.wintersteve25.tau.build.UIBuilder;
-import com.github.wintersteve25.tau.components.base.UIComponent;
-import com.github.wintersteve25.tau.layout.Layout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,11 +23,12 @@ import java.util.List;
 public class ScreenUIRenderer extends Screen {
 
     private final UIComponent uiComponent;
-    private final List<Renderable> components;
-    private final List<Renderable> tooltips;
-    private final List<DynamicUIComponent> dynamicUIComponents;
     private final boolean renderBackground;
     private final Theme theme;
+    private final RootInputDispatcher dispatcher;
+    private BuildContext mainContext;
+    private BuildResult activeBuild;
+    private List<DynamicUIComponent> dynamicUIComponents;
     private boolean built;
 
     /**
@@ -39,9 +39,10 @@ public class ScreenUIRenderer extends Screen {
         this.uiComponent = uiComponent;
         this.renderBackground = renderBackground;
         this.theme = theme;
-        this.components = new ArrayList<>();
-        this.tooltips = new ArrayList<>();
+        this.mainContext = new BuildContext();
+        this.activeBuild = null;
         this.dynamicUIComponents = new ArrayList<>();
+        this.dispatcher = new RootInputDispatcher(() -> mainContext.eventListeners());
     }
 
     /**
@@ -72,13 +73,8 @@ public class ScreenUIRenderer extends Screen {
      */
     private void rebuildUi() {
         Layout layout = new Layout(width, height);
-
-        clearDynamicComponents();
-        components.clear();
-        tooltips.clear();
-        dynamicUIComponents.clear();
-        List<GuiEventListener> listeners = new ArrayList<>(children());
-        UIBuilder.build(layout, theme, uiComponent, new BuildContext(components, tooltips, dynamicUIComponents, listeners, new ArrayList<>()));
+        BuildResult result = UIBuilder.buildTree(layout, theme, uiComponent);
+        commitFullBuild(result);
     }
 
     /**
@@ -88,6 +84,27 @@ public class ScreenUIRenderer extends Screen {
         for (DynamicUIComponent dynamicUIComponent : dynamicUIComponents) {
             dynamicUIComponent.destroy();
         }
+        dynamicUIComponents.clear();
+    }
+
+    private void commitFullBuild(BuildResult result) {
+        if (activeBuild != null) {
+            UIBuilder.destroyOrphans(activeBuild.preorderMounts(), result.preorderMounts());
+        }
+        UIBuilder.promoteStagedStates(result);
+        activeBuild = result;
+        mainContext = result.context();
+        dynamicUIComponents = new ArrayList<>(result.context().dynamicUIComponents());
+    }
+
+    private boolean tryPartialCommit(ComponentMount dirtyMount) {
+        PartialCommitPlan plan = UIBuilder.planPartialCommit(dirtyMount);
+        if (plan == null) {
+            return false;
+        }
+        activeBuild = UIBuilder.applyPartialCommit(activeBuild, plan, mainContext);
+        dynamicUIComponents = new ArrayList<>(mainContext.dynamicUIComponents());
+        return true;
     }
 
     /**
@@ -96,7 +113,19 @@ public class ScreenUIRenderer extends Screen {
     @Override
     public void tick() {
         if (!built) return;
-        if (UIBuilder.tickDynamicUIComponents(dynamicUIComponents)) {
+        List<ComponentMount> dirtyMounts = UIBuilder.filterTopLevelDirty(UIBuilder.collectDirtyDynamicMounts(activeBuild));
+        if (dirtyMounts.isEmpty()) {
+            return;
+        }
+
+        for (ComponentMount dirtyMount : dirtyMounts) {
+            if (!tryPartialCommit(dirtyMount)) {
+                rebuildUi();
+                return;
+            }
+        }
+
+        if (activeBuild == null) {
             rebuildUi();
         }
     }
@@ -120,12 +149,69 @@ public class ScreenUIRenderer extends Screen {
             this.renderBackground(graphics, pMouseX, pMouseY, pPartialTicks);
         }
 
-        for (Renderable component : components) {
+        for (Renderable component : mainContext.renderables()) {
             component.render(graphics, pMouseX, pMouseY, pPartialTicks);
         }
 
-        for (Renderable tooltip : tooltips) {
+        for (Renderable tooltip : mainContext.tooltips()) {
             tooltip.render(graphics, pMouseX, pMouseY, pPartialTicks);
         }
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        return dispatcher.mouseClicked(mouseX, mouseY, button) || super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        return dispatcher.mouseReleased(mouseX, mouseY, button) || super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        return dispatcher.mouseDragged(mouseX, mouseY, button, dragX, dragY) || super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        return dispatcher.mouseScrolled(mouseX, mouseY, scrollX, scrollY) || super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        return dispatcher.keyPressed(keyCode, scanCode, modifiers) || super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        return dispatcher.keyReleased(keyCode, scanCode, modifiers) || super.keyReleased(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        return dispatcher.charTyped(codePoint, modifiers) || super.charTyped(codePoint, modifiers);
+    }
+
+    @Override
+    public List<? extends GuiEventListener> children() {
+        return dispatcher.children();
+    }
+
+    @Override
+    public GuiEventListener getFocused() {
+        return dispatcher.getFocused();
+    }
+
+    @Override
+    public void setFocused(GuiEventListener listener) {
+        dispatcher.setFocused(listener);
+        super.setFocused(listener);
+    }
+
+    @Override
+    public void mouseMoved(double mouseX, double mouseY) {
+        dispatcher.children().forEach(listener -> listener.mouseMoved(mouseX, mouseY));
+        super.mouseMoved(mouseX, mouseY);
     }
 }

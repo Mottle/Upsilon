@@ -1,7 +1,6 @@
 package com.github.wintersteve25.tau.components.interactable;
 
-import com.github.wintersteve25.tau.build.BuildContext;
-import com.github.wintersteve25.tau.build.UIBuilder;
+import com.github.wintersteve25.tau.build.*;
 import com.github.wintersteve25.tau.components.base.PrimitiveUIComponent;
 import com.github.wintersteve25.tau.components.base.UIComponent;
 import com.github.wintersteve25.tau.layout.Axis;
@@ -17,15 +16,12 @@ import java.util.function.Consumer;
 /**
  * Primitive clickable button component with a single child content node.
  */
-public final class Button implements PrimitiveUIComponent, GuiEventListener {
+public final class Button implements PrimitiveUIComponent, GuiEventListener, MountStateHost<Button.ButtonMountState> {
 
     private final Consumer<Integer> onPress;
     private final UIComponent child;
 
-    private int width;
-    private int height;
-    private int x;
-    private int y;
+    private ButtonMountState activeMountState;
 
     private boolean focus;
 
@@ -33,7 +29,7 @@ public final class Button implements PrimitiveUIComponent, GuiEventListener {
      * Creates a button.
      *
      * @param onPress callback receiving the clicked mouse button id
-     * @param child child component rendered inside the button frame
+     * @param child   child component rendered inside the button frame
      */
     public Button(Consumer<Integer> onPress, UIComponent child) {
         this.onPress = onPress;
@@ -45,12 +41,22 @@ public final class Button implements PrimitiveUIComponent, GuiEventListener {
      */
     @Override
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext buildContext) {
-        width = layout.getWidth();
-        height = layout.getHeight();
-        x = layout.getPosition(Axis.HORIZONTAL, width);
-        y = layout.getPosition(Axis.VERTICAL, height);
+        BuildSession session = UIBuilder.currentSession();
+        if (session != null && session.getMode() == com.github.wintersteve25.tau.build.BuildMode.MOUNTED_COMMITTABLE) {
+            ButtonMountState state = session.getOrCreateStagedState(this, ButtonMountState::new);
+            state.width = layout.getWidth();
+            state.height = layout.getHeight();
+            state.x = layout.getPosition(Axis.HORIZONTAL, state.width);
+            state.y = layout.getPosition(Axis.VERTICAL, state.height);
+            session.addRenderable((graphics, pMouseX, pMouseY, pPartialTicks) -> theme.drawButton(graphics, state.x, state.y, state.width, state.height, pPartialTicks, pMouseX, pMouseY, this.getInteractableState(pMouseX, pMouseY)));
+        } else {
+            int width = layout.getWidth();
+            int height = layout.getHeight();
+            int x = layout.getPosition(Axis.HORIZONTAL, width);
+            int y = layout.getPosition(Axis.VERTICAL, height);
+            buildContext.renderables().add((graphics, pMouseX, pMouseY, pPartialTicks) -> theme.drawButton(graphics, x, y, width, height, pPartialTicks, pMouseX, pMouseY, this.getInteractableState(pMouseX, pMouseY)));
+        }
 
-        buildContext.renderables().add((graphics, pMouseX, pMouseY, pPartialTicks) -> theme.drawButton(graphics, x, y, width, height, pPartialTicks, pMouseX, pMouseY, this.getInteractableState(pMouseX, pMouseY)));
         UIBuilder.build(layout, theme, child, buildContext);
 
         return layout.getSize();
@@ -71,14 +77,6 @@ public final class Button implements PrimitiveUIComponent, GuiEventListener {
     }
 
     /**
-     * Updates focus flag for keyboard/gamepad navigation.
-     */
-    @Override
-    public void setFocused(boolean pFocused) {
-        focus = pFocused;
-    }
-
-    /**
      * Returns whether this button is currently focused.
      */
     @Override
@@ -86,8 +84,17 @@ public final class Button implements PrimitiveUIComponent, GuiEventListener {
         return focus;
     }
 
+    /**
+     * Updates focus flag for keyboard/gamepad navigation.
+     */
+    @Override
+    public void setFocused(boolean pFocused) {
+        focus = pFocused;
+    }
+
     private boolean isHovered(int pMouseX, int pMouseY) {
-        return SimpleVec2i.within(pMouseX, pMouseY, x, y, width, height);
+        ButtonMountState state = activeMountState;
+        return state != null && SimpleVec2i.within(pMouseX, pMouseY, state.x, state.y, state.width, state.height);
     }
 
     private InteractableState getInteractableState(int pMouseX, int pMouseY) {
@@ -100,10 +107,22 @@ public final class Button implements PrimitiveUIComponent, GuiEventListener {
         return InteractableState.IDLE;
     }
 
+    @Override
+    public ButtonMountState getActiveMountState() {
+        return activeMountState;
+    }
+
+    @Override
+    public void setActiveMountState(ButtonMountState state) {
+        this.activeMountState = state;
+    }
+
     public static final class Builder {
         private Consumer<Integer> onPress;
 
-        /** Creates a new button builder. */
+        /**
+         * Creates a new button builder.
+         */
         public Builder() {
         }
 
@@ -121,5 +140,12 @@ public final class Button implements PrimitiveUIComponent, GuiEventListener {
         public Button build(UIComponent child) {
             return new Button(onPress, child);
         }
+    }
+
+    public static final class ButtonMountState implements MountState {
+        int width;
+        int height;
+        int x;
+        int y;
     }
 }

@@ -7,13 +7,10 @@ import moe.liar.upsilon.Upsilon;
  */
 @FunctionalInterface
 public interface Size {
-    /** Constant size strategy that always resolves to zero. */
-    Size ZERO = (s) -> SimpleVec2i.zero();
-
     /**
-     * Resolves component size from available max size.
+     * Constant size strategy that always resolves to zero.
      */
-    SimpleVec2i get(SimpleVec2i maxSize);
+    Size ZERO = (s) -> SimpleVec2i.zero();
 
     /**
      * Creates a proportional size strategy using one percentage for both axes.
@@ -52,4 +49,9 @@ public interface Size {
     static Size staticSize(int width, int height) {
         return s -> new SimpleVec2i(width, height);
     }
+
+    /**
+     * Resolves component size from available max size.
+     */
+    SimpleVec2i get(SimpleVec2i maxSize);
 }
