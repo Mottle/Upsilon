@@ -152,7 +152,7 @@ public class UIBuilder {
         return buildTree(target.getSavedLayout().copy(), target.getSavedTheme(), target.getOwner());
     }
 
-    public static PartialCommitPlan planPartialCommit(ComponentMount dirtyMount) {
+        public static PartialCommitPlan planPartialCommit(ComponentMount dirtyMount, BuildContext rootContext) {
         ComponentMount current = chooseCommitTarget(dirtyMount);
         while (current != null) {
             BuildResult candidate = rebuildFrom(current);
@@ -169,6 +169,11 @@ public class UIBuilder {
 
             ComponentMount reusableTarget = findReusableMount(current, candidateRoot);
             if (reusableTarget == null) {
+                current = current.getParent();
+                continue;
+            }
+
+            if (reusableTarget.getArtifactContext() != rootContext) {
                 current = current.getParent();
                 continue;
             }
@@ -315,6 +320,7 @@ public class UIBuilder {
         mount.setSavedLayout(layout.copy());
         mount.setSavedTheme(theme);
         BuildContext currentContext = session.getContext();
+        mount.setArtifactContext(currentContext);
         mount.setRanges(new ContextRanges(
                 currentContext.renderables().size(), -1,
                 currentContext.tooltips().size(), -1,

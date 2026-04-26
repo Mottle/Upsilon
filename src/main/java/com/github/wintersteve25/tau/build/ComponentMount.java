@@ -22,6 +22,7 @@ public final class ComponentMount {
     private Layout savedLayout;
     private Theme savedTheme;
     private SimpleVec2i builtSize;
+    private BuildContext artifactContext;
 
     public ComponentMount(UIComponent owner, DynamicUIComponent dynamicOwner) {
         this.owner = owner;
@@ -69,6 +70,14 @@ public final class ComponentMount {
 
     public void setRanges(ContextRanges ranges) {
         this.ranges = ranges;
+    }
+
+    public BuildContext getArtifactContext() {
+        return artifactContext;
+    }
+
+    public void setArtifactContext(BuildContext artifactContext) {
+        this.artifactContext = artifactContext;
     }
 
     public Layout getSavedLayout() {

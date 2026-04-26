@@ -98,7 +98,7 @@ public class ScreenUIRenderer extends Screen {
     }
 
     private boolean tryPartialCommit(ComponentMount dirtyMount) {
-        PartialCommitPlan plan = UIBuilder.planPartialCommit(dirtyMount);
+        PartialCommitPlan plan = UIBuilder.planPartialCommit(dirtyMount, mainContext);
         if (plan == null) {
             return false;
         }
@@ -123,10 +123,6 @@ public class ScreenUIRenderer extends Screen {
                 rebuildUi();
                 return;
             }
-        }
-
-        if (activeBuild == null) {
-            rebuildUi();
         }
     }
 

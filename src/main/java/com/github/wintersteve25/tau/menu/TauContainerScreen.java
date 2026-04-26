@@ -104,18 +104,27 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
         return context.slots().stream().map(slot -> slot.handler().getStructureKey()).toList();
     }
 
-    private boolean slotStructureChanged(BuildResult candidate) {
-        return menu.getSyncedSlotStructureVersion() != activeSlotStructureVersion
-                || !currentSlotStructureKeys(candidate.context()).equals(activeSlotStructureKeys);
+    private boolean slotStructureChanged() {
+        return menu.getSyncedSlotStructureVersion() != activeSlotStructureVersion;
+    }
+
+    private boolean slotSubtreeChanged(PartialCommitPlan plan) {
+        if (menu.getSyncedSlotStructureVersion() != activeSlotStructureVersion) {
+            return true;
+        }
+        ContextRanges oldRanges = plan.oldRanges();
+        List<Object> oldKeys = activeSlotStructureKeys.subList(oldRanges.slotStart(), oldRanges.slotEnd());
+        List<Object> newKeys = currentSlotStructureKeys(plan.candidate().context());
+        return !newKeys.equals(oldKeys);
     }
 
     private boolean tryPartialCommit(ComponentMount dirtyMount) {
-        PartialCommitPlan plan = UIBuilder.planPartialCommit(dirtyMount);
+        PartialCommitPlan plan = UIBuilder.planPartialCommit(dirtyMount, mainContext);
         if (plan == null) {
             return false;
         }
 
-        if (slotStructureChanged(plan.candidate())) {
+        if (slotSubtreeChanged(plan)) {
             stale = true;
             return false;
         }

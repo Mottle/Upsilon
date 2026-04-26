@@ -58,16 +58,6 @@ public class HudUIRenderer {
         built = true;
     }
 
-    /**
-     * Invokes destroy hooks for currently active dynamic components.
-     */
-    private void clearDynamicComponents() {
-        for (DynamicUIComponent dynamicUIComponent : dynamicUIComponents) {
-            dynamicUIComponent.destroy();
-        }
-        dynamicUIComponents.clear();
-    }
-
     private void commitFullBuild(BuildResult result) {
         if (activeBuild != null) {
             UIBuilder.destroyOrphans(activeBuild.preorderMounts(), result.preorderMounts());
@@ -93,7 +83,7 @@ public class HudUIRenderer {
         }
 
         for (ComponentMount dirtyMount : dirtyMounts) {
-            PartialCommitPlan plan = UIBuilder.planPartialCommit(dirtyMount);
+             PartialCommitPlan plan = UIBuilder.planPartialCommit(dirtyMount, mainContext);
             if (plan == null) {
                 init();
                 return;
@@ -110,14 +100,14 @@ public class HudUIRenderer {
         int width = mainWindow.getGuiScaledWidth();
         int height = mainWindow.getGuiScaledHeight();
 
-        for (Renderable component : mainContext.renderables()) {
-            component.render(graphics, 0, 0, pPartialTicks);
-        }
-
         if (width != screenWidth || height != screenHeight) {
             screenWidth = width;
             screenHeight = height;
             init();
+        }
+
+        for (Renderable component : mainContext.renderables()) {
+            component.render(graphics, 0, 0, pPartialTicks);
         }
     }
 }
