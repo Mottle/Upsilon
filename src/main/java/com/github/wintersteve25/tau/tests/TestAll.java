@@ -54,7 +54,8 @@ public class TestAll implements UIComponent {
                 button(new TestPartialText()),
                 button(new TestPartialButton()),
                 button(new TestPartialTransform()),
-                button(new TestPartialListView())
+                button(new TestPartialListView()),
+                button(new TestCorrectnessScenario())
         );
 
         List<UIComponent> columns = new java.util.ArrayList<>();
