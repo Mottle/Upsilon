@@ -1,8 +1,37 @@
 # 局部重建实现计划（严格版）
 
-> **状态：已实现并通过构建验证。**  
-> 六阶段实施全部完成，剩余工作仅限 in-game 手工交互验证。
-> 见下方「实施顺序」中各阶段标注和「验证标准」中已完成/待验证区分。
+> **状态：核心实现已落地，运行时修复已完成，当前文档进入维护阶段。**  
+> 六阶段主实现已在 `5d233dc` 闭环；后续 runtime 稳定性修复已在 `5a0749f` 与 `4422541` 落地；
+> `a422821` 新增了综合手工验收页 `TestCorrectnessScenario`。当前剩余工作以更广范围的 HUD / menu /复杂手工回归为主。
+
+## 当前实现状态（2026-04）
+
+当前代码库中的 partial runtime 已不再是“设计中方案”，而是已投入使用的 active 实现。与早期计划相比，最重要的当前事实如下：
+
+1. **partial commit 以 direct artifact context 为边界执行。**
+   - `Transform` / `ListView` / `Clip` 这类组件会在自己的 inner `BuildContext` 中组织 child renderables / listeners。
+   - partial commit 不能只替换 root renderables；必须在提交点所属的 direct context 中一起处理 `renderables/tooltips/dynamicUIComponents/eventListeners/slots` 五类 artifact。
+
+2. **nested inner-context partial commit 的正确性修复已落地。**
+   - candidate subtree 被提交到 active context 时，不仅要 rebind `artifactContext`，还要把 subtree `ContextRanges` 平移到 active context 的真实起点。
+   - 否则第二次及之后的 partial commit 会切错 slice，表现为 row 消失、文本重叠、旧 renderable 残留。
+
+3. **root listener tree 不能通过 mount flatten 重建。**
+   - `Transform` / `ListView` 这类容器型 listener 的边界依赖它们自己的 local child listener 列表。
+   - 若 partial commit 后把所有 `GuiEventListener` 从 mount tree 平铺回 root context，会绕过容器边界，造成“点击屏幕任意位置都触发”的假阳性。
+   - 当前实现通过 splice `eventListeners` 列表本身来保持边界，而不是重新 flatten root listener tree。
+
+4. **当前手工验收入口已经明确。**
+   - 基础 partial 页面：`TestPartialText`、`TestPartialButton`、`TestPartialTransform`、`TestPartialListView`
+   - 综合回归页面：`TestCorrectnessScenario`
+   - `TestDynamic` 仍是 `PartialCommitUnsafe` 的 full rebuild 测试页，不应作为 partial runtime 正确性验收页。
+
+5. **当前已知手工验证结论。**
+   - `TestPartialText`：用户已确认正常
+   - `TestPartialButton`：用户已确认正常
+   - `TestPartialTransform`：用户已确认正常
+   - `TestPartialListView`：用户已确认正常
+   - `TestCorrectnessScenario`：已完成 smoke check，当前未见明显问题
 
 ## 定位
 
@@ -112,6 +141,7 @@ mounted build 必须检测并拒绝重复实例挂载。
 5. **输入分发使用稳定 dispatcher**；不依赖 `Screen.children()` 热替换
 6. **局部提交点由尺寸比较 + 向上回流决定**
 7. **`destroy()` 只对 orphan active mounts 触发**
+8. **`eventListeners` 与 `dynamicUIComponents` 也属于 partial splice 的一等 artifact**，不能只靠 mount flatten 在 commit 后重建
 
 ---
 
@@ -666,7 +696,15 @@ public final class RootInputDispatcher implements ContainerEventHandler {
 - `charTyped`
 - `changeFocus`
 
-顺序：先给 dispatcher；若未消费，再走 `super`。
+顺序：
+
+- mouse 相关事件直接走 dispatcher
+- keyboard / char 事件先给 dispatcher；若未消费，再走 `super`
+
+关键约束：
+
+- root context 中只应保留真正属于 root 的 listener 边界
+- `Transform` / `ListView` 子 listener 必须继续由容器自身的 `children()` 暴露，而不是在 partial commit 后被平铺回 root
 
 ### `TauContainerScreen`
 
@@ -757,13 +795,18 @@ screen 关闭时才 destroy 当前整棵 active tree。
 2. 保存旧 active `ContextRanges oldRanges`
 3. 在 `MOUNTED_COMMITTABLE` 下构建 staged candidate
 4. 计算 old/new dynamic owner 差集，destroy orphan active mounts
-5. 从 `mainContext` 删除 `oldRanges` 覆盖的五类 active artifact 区间
-6. 将 staged candidate ranges 平移到 `oldRanges` 起始位置
-7. 插入 staged candidate 的五类 artifact 到 `mainContext`
-8. 在权威挂载树中用 candidate root 替换 target
-9. staged → active，清空 staged 槽
-10. 修正旧子树之后仍存活节点的 `ranges` 偏移
+5. 在 `target.getArtifactContext()` 中删除 `oldRanges` 覆盖的五类 active artifact 区间
+6. 将 candidate subtree 中仍指向 replacement context 的 mount 统一 rebind 到 active target context
+7. 将 candidate subtree ranges 平移到 `oldRanges` 起始位置
+8. 插入 staged candidate 的五类 artifact 到 active direct context
+9. 在权威挂载树中用 candidate root 替换 target
+10. staged → active，清空 staged 槽
 11. 从权威树重新 flatten 出 active `preorderMounts` 与 active `dynamicMounts`
+
+备注：
+
+- 当前实现的关键点不是“全局 tail shift”，而是**direct context aware splice + subtree range shift**
+- 这正是 `4422541` 修复 nested `Transform` / `ListView` 二次提交错误的核心
 
 如果任一步失败：
 
@@ -875,7 +918,10 @@ screen 关闭时全量 destroy 当前 active tree。
 
 ## 实施顺序
 
-> **全部六阶段已完成并提交 (5d233dc)。** 各阶段标注 ✅ 表示代码已闭环。标注 🧪 表示仅剩 in-game 手工验证。
+> **全部六阶段已完成并提交 (`5d233dc`)。** 后续 runtime 修复与验收增强：
+> - `5a0749f`：稳定 root partial runtime 与基础动态测试页
+> - `4422541`：修复 nested partial commit 边界与 inner-context range 漂移
+> - `a422821`：新增综合验收页 `TestCorrectnessScenario`
 
 ### 第一阶段：基础模型 ✅
 1. `BuildContext.removeRange / insertAll`
@@ -925,18 +971,29 @@ screen 关闭时全量 destroy 当前 active tree。
 
 ## 验证标准
 
-> ✅ = 代码已验证并通过 build；🧪 = 仅剩 in-game 手工验证。
+> ✅ = 已通过代码/构建/JUnit/明确的手工反馈闭环；🧪 = 仍需更广范围手工验证。
 
 1. ✅ 测量 build 不创建 mount
 2. ✅ `MOUNTED_MEASURE` 的 artifact 只存在于隔离 context，绝不逃逸到主 active/staged 输出
 3. ✅ mounted build 中 `Column/Row` 子节点正确进入挂载树
-4. 🧪 simple dynamic 文本变化不触发整屏重建
-5. 🧪 `Column/Row` 子项尺寸变化后兄弟布局正确回流
-6. 🧪 `ListView` 内容尺寸变化后滚动状态保留
-7. 🧪 `TextField` 的文本/光标/选区/focus 在 rebuild 后保留
-8. 🧪 `Slider` 的值/拖拽中状态在 rebuild 后保留
-9. 🧪 `Button` hit-test 在 rebuild 后正确
-10. 🧪 `Transform` / `Tooltip` / `WidgetWrapper` rebuild 后输入与渲染一致
-11. 🧪 `HudUIRenderer` 局部变化不触发全 HUD 重建
-12. 🧪 `TauContainerScreen` slot 可视变化可局部提交；结构变化被检测并拒绝
-13. ✅ 任一 partial commit 失败自动 full rebuild 恢复一致性
+4. ✅ simple dynamic 文本变化不触发整屏错误，`TestPartialText` 已手工确认
+5. 🧪 `Column/Row` 子项尺寸变化后兄弟布局正确回流（`TestCorrectnessScenario` 已覆盖路径，仍建议继续手工压力验证）
+6. 🧪 `ListView` 内容尺寸变化后滚动状态保留（当前已验证 repeated partial commit 不错位，但滚动状态仍需专项手工验证）
+7. 🧪 `TextField` 的文本/光标/选区/focus 在 rebuild 后保留（综合页已提供路径）
+8. 🧪 `Slider` 的值/拖拽中状态在 rebuild 后保留（综合页已提供路径）
+9. ✅ `Button` hit-test 在 rebuild 后正确，`TestPartialButton` 已手工确认
+10. ✅ nested `Transform` / `ListView` partial commit 不再出现 listener 边界错误、row 消失或文本重叠；`TestPartialTransform` 与 `TestPartialListView` 已手工确认
+11. 🧪 `Tooltip` / translated panel / clipped long text 在 repeated partial commit 后持续一致（综合页已提供路径）
+12. 🧪 `HudUIRenderer` 局部变化不触发全 HUD 重建
+13. 🧪 `TauContainerScreen` slot 可视变化可局部提交；结构变化被检测并拒绝
+14. ✅ 任一 partial commit 失败自动 full rebuild 恢复一致性
+
+### 当前推荐手工回归顺序
+
+1. `TestPartialText`
+2. `TestPartialButton`
+3. `TestPartialTransform`
+4. `TestPartialListView`
+5. `TestCorrectnessScenario`
+
+其中 `TestCorrectnessScenario` 应作为改动 `UIBuilder` / `Transform` / `ListView` / `TextField` / `Slider` / tooltip layering 后的首选综合验收页。

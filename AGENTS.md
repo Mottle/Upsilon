@@ -23,7 +23,9 @@ Compact reference for agents working in this repo.
 
 - Data generators write to `src/generated/resources` (already included in `sourceSets.main.resources`).
 - `gradle.properties` sets `org.gradle.daemon=false` and `-Xmx4G`.
-- **Linux gotcha**: `gradlew` has Windows (CRLF) line endings. Run with `bash gradlew ...` or convert line endings first.
+- **Rule**: when running Gradle in this repo, prefer `powershell.exe ./gradlew ...` over `bash gradlew ...`.
+- **WSL/Linux gotcha**: `gradlew` has Windows (CRLF) line endings. In this repo the most reliable path is usually `powershell.exe ./gradlew ...`.
+- If PowerShell is unavailable, run with `bash gradlew ...` or convert line endings first.
 
 ## Architecture
 
@@ -41,8 +43,8 @@ Compact reference for agents working in this repo.
 - **`MountState` / `MountStateHost<S>`** — 组件上的 active mount state 接口；staged 写 session，commit 后才 promote 到 active
 - **`PartialCommitPlan` / `PartialCommitUnsafe`** — partial commit 候选与 unsafe 标记
 - **`UIBuilder.planPartialCommit(...)`** — 从 dirty mount 向上回流选提交点，生成内层 context 感知的提交计划
-- **`UIBuilder.applyPartialCommit(...)`** — 执行 subtree splice、tail shift、ancestor range 维护和 mount 树替换
-- **上下文栈**：`Transform/ListView/Clip` 通过 `session.pushContext/popContext` 包裹内层 builds；partial commit 只在 mount 的 direct artifact context 内做 splice/shift
+- **`UIBuilder.applyPartialCommit(...)`** — 在 direct artifact context 中 splice 五类 artifact，rebind nested inner-context mounts，并用 candidate subtree 替换 active subtree
+- **上下文栈**：`Transform/ListView/Clip` 通过 `session.pushContext/popContext` 包裹内层 builds；partial commit 必须尊重这些 inner context 边界，不能把 child listeners 平铺回 root
 
 ### Renderers
 - **`ScreenUIRenderer`** — wraps a `UIComponent` as a Minecraft `Screen`.
@@ -89,11 +91,20 @@ src/main/resources/META-INF/
 
 ## Testing
 
-- **No JUnit tests.** All verification is manual, in-game.
+- There is a meaningful JVM test suite under `src/test/java/com/github/wintersteve25/tau/build/` covering `BuildContext`, `BuildSession`, `BuildResult`, `ComponentMount`, partial-commit planning, and integration-level runtime invariants.
+- Run targeted JVM verification with `powershell.exe ./gradlew test --tests com.github.wintersteve25.tau.build.UIBuilderIntegrationTest` or `powershell.exe ./gradlew build` for the full build.
 - Test UIs live in `src/main/java/.../tau/tests/`.
 - `TestAll.java` is a hub screen with buttons that open each individual test screen.
 - To run tests: launch the client, press `,` (comma key, registered by `UpsilonClientTestHooks`) to open `TestAll`.
 - `src/main/java/moe/liar/upsilon/client/UpsilonClientTestHooks.java` registers the dev hotkey via `@EventBusSubscriber` — no manual code changes needed.
+- For partial-runtime changes, start manual regression with:
+  - `TestPartialText`
+  - `TestPartialButton`
+  - `TestPartialTransform`
+  - `TestPartialListView`
+  - `TestCorrectnessScenario`
+- `TestCorrectnessScenario` is the current high-complexity acceptance page. It combines filtering, repeated row-local partial commits, translated panels, widgets, tooltips, clipping, and scrolling in one screen.
+- `TestDynamic` is intentionally `PartialCommitUnsafe` and exercises full rebuild behavior, not partial-runtime correctness.
 
 ## Important Conventions
 
@@ -102,6 +113,8 @@ src/main/resources/META-INF/
 - **`SimpleVec2i`** (formerly `Vector2i`) is the repo’s 2D integer vector type.
 - **Sound**: use `ClientSoundHelper` to play sounds from UI code (moved out of `UIComponent` in v2.1.0).
 - **Variable**: use `Variable<T>` for reactive values inside `DynamicUIComponent` without rebuilding the whole tree.
+- **Partial-safe widgets**: `WidgetWrapper` is legacy/full-rebuild-only; partial-safe widget components should use `WidgetFactoryWrapper`.
+- **Hit-testing in manual tests**: when validating container boundaries (`Transform`, `ListView`, clip/translation interactions), prefer real bounded widgets like `Button`. Bare `GuiEventListener` test components can mask boundary bugs by accepting clicks without geometry.
 
 ## Release & CI
 
@@ -115,7 +128,7 @@ src/main/resources/META-INF/
 
 ## Gotchas
 
-- `gradlew` CRLF endings on Linux — use `bash gradlew ...` or run `sed -i 's/\r$//' gradlew`.
+- `gradlew` CRLF endings on Linux/WSL — prefer `powershell.exe ./gradlew ...`; only fall back to `bash gradlew ...` or `sed -i 's/\r$//' gradlew` when PowerShell is unavailable.
 - Access transformers live in `src/main/resources/META-INF/accesstransformer.cfg`; build.gradle wires them via `minecraft.accessTransformers.files`.
 - Current transformers: `AbstractContainerMenu#dataSlots` (protected → public), `Slot#x` and `Slot#y` (final → public-f).
 - Parchment mappings are configured in `gradle.properties` (`neogradle.subsystems.parchment.*`).
