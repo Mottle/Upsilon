@@ -232,16 +232,25 @@ public class UIBuilder {
         }
     }
 
+    public static void rebindArtifactContext(ComponentMount root, BuildContext from, BuildContext to, int dr, int dt, int dd, int dl, int ds) {
+        // Root-context artifacts are copied into the active context during splice,
+        // so future partial commits must target that live context rather than the
+        // candidate build's detached root lists.
+        if (root.getArtifactContext() == from) {
+            root.setArtifactContext(to);
+            root.setRanges(root.getRanges().shiftedBy(dr, dt, dd, dl, ds));
+        }
+        for (ComponentMount child : root.getChildren()) {
+            rebindArtifactContext(child, from, to, dr, dt, dd, dl, ds);
+        }
+    }
+
     public static void rebuildRuntimeCaches(BuildContext mainContext, List<ComponentMount> preorderMounts) {
         mainContext.dynamicUIComponents().clear();
-        mainContext.eventListeners().clear();
 
         for (ComponentMount mount : preorderMounts) {
             if (mount.getDynamicOwner() != null) {
                 mainContext.dynamicUIComponents().add(mount.getDynamicOwner());
-            }
-            if (mount.getOwner() instanceof GuiEventListener listener) {
-                mainContext.eventListeners().add(listener);
             }
         }
     }
@@ -249,9 +258,16 @@ public class UIBuilder {
     public static BuildResult applyPartialCommit(BuildResult activeBuild, PartialCommitPlan plan, BuildContext mainContext) {
         ComponentMount candidateTarget = plan.candidateTarget();
         ContextRanges oldRanges = plan.oldRanges();
+        ContextRanges replacementRanges = plan.replacementRanges();
+        int dr = oldRanges.renderableStart() - replacementRanges.renderableStart();
+        int dt = oldRanges.tooltipStart() - replacementRanges.tooltipStart();
+        int dd = oldRanges.dynamicStart() - replacementRanges.dynamicStart();
+        int dl = oldRanges.listenerStart() - replacementRanges.listenerStart();
+        int ds = oldRanges.slotStart() - replacementRanges.slotStart();
 
         destroyOrphans(plan.oldSubtree(), plan.newSubtree());
-        BuildContext.splice(plan.targetContext(), oldRanges, plan.replacementContext(), plan.replacementRanges());
+        rebindArtifactContext(candidateTarget, plan.replacementContext(), plan.targetContext(), dr, dt, dd, dl, ds);
+        BuildContext.splice(plan.targetContext(), oldRanges, plan.replacementContext(), replacementRanges);
 
         ComponentMount parent = plan.activeTarget().getParent();
         SimpleVec2i resultSize = activeBuild.size();
@@ -270,7 +286,7 @@ public class UIBuilder {
         List<ComponentMount> activeRoots = activeBuild.rootMounts();
         BuildResult updated = indexBuild(resultSize, mainContext, activeRoots);
         rebuildRuntimeCaches(mainContext, updated.preorderMounts());
-        return indexBuild(resultSize, mainContext, activeRoots);
+        return updated;
     }
 
     // param size is the accumulated size of this component branch
