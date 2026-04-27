@@ -81,22 +81,6 @@ class UIBuilderPartialCommitTest {
     }
 
     @Test
-    void shiftSubtreeRanges_shifts_all_mounts() {
-        ComponentMount a = new ComponentMount(mock(UIComponent.class), null);
-        ComponentMount b = new ComponentMount(mock(UIComponent.class), null);
-
-        a.setRanges(new ContextRanges(0, 1, 0, 1, 0, 1, 0, 1, 0, 1));
-        b.setRanges(new ContextRanges(5, 6, 5, 6, 5, 6, 5, 6, 5, 6));
-
-        UIBuilder.shiftSubtreeRanges(List.of(a, b), 10, 0, 0, 0, 0);
-
-        assertEquals(10, a.getRanges().renderableStart());
-        assertEquals(11, a.getRanges().renderableEnd());
-        assertEquals(0, a.getRanges().tooltipStart());
-        assertEquals(15, b.getRanges().renderableStart());
-    }
-
-    @Test
     void chooseCommitTarget_returns_first_non_unsafe_ancestor() {
         UIComponent owner = mock(UIComponent.class);
         ComponentMount mount = new ComponentMount(owner, null);

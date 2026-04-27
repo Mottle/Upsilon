@@ -179,7 +179,8 @@ public class UIBuilder {
                 continue;
             }
 
-            if (candidateTarget.getBuiltSize().x != reusableTarget.getBuiltSize().x || candidateTarget.getBuiltSize().y != reusableTarget.getBuiltSize().y) {
+            if ((candidateTarget.getBuiltSize().x != reusableTarget.getBuiltSize().x || candidateTarget.getBuiltSize().y != reusableTarget.getBuiltSize().y)
+                    && current.getParent() != null) {
                 current = current.getParent();
                 continue;
             }
@@ -231,26 +232,17 @@ public class UIBuilder {
         }
     }
 
-    public static void shiftSubtreeRanges(List<ComponentMount> mounts, int dr, int dt, int dd, int dl, int ds) {
-        for (ComponentMount mount : mounts) {
-            mount.setRanges(mount.getRanges().shiftedBy(dr, dt, dd, dl, ds));
-        }
-    }
+    public static void rebuildRuntimeCaches(BuildContext mainContext, List<ComponentMount> preorderMounts) {
+        mainContext.dynamicUIComponents().clear();
+        mainContext.eventListeners().clear();
 
-    public static void growAncestorRangeEnds(ComponentMount start, BuildContext targetContext, int dr, int dt, int dd, int dl, int ds) {
-        ComponentMount current = start.getParent();
-        while (current != null) {
-            if (current.getArtifactContext() == targetContext) {
-                ContextRanges ranges = current.getRanges();
-                current.setRanges(new ContextRanges(
-                        ranges.renderableStart(), ranges.renderableEnd() + dr,
-                        ranges.tooltipStart(), ranges.tooltipEnd() + dt,
-                        ranges.dynamicStart(), ranges.dynamicEnd() + dd,
-                        ranges.listenerStart(), ranges.listenerEnd() + dl,
-                        ranges.slotStart(), ranges.slotEnd() + ds
-                ));
+        for (ComponentMount mount : preorderMounts) {
+            if (mount.getDynamicOwner() != null) {
+                mainContext.dynamicUIComponents().add(mount.getDynamicOwner());
             }
-            current = current.getParent();
+            if (mount.getOwner() instanceof GuiEventListener listener) {
+                mainContext.eventListeners().add(listener);
+            }
         }
     }
 
@@ -260,14 +252,6 @@ public class UIBuilder {
 
         destroyOrphans(plan.oldSubtree(), plan.newSubtree());
         BuildContext.splice(plan.targetContext(), oldRanges, plan.replacementContext(), plan.replacementRanges());
-        shiftSubtreeRanges(
-                plan.newSubtree(),
-                oldRanges.renderableStart() - plan.replacementRanges().renderableStart(),
-                oldRanges.tooltipStart() - plan.replacementRanges().tooltipStart(),
-                oldRanges.dynamicStart() - plan.replacementRanges().dynamicStart(),
-                oldRanges.listenerStart() - plan.replacementRanges().listenerStart(),
-                oldRanges.slotStart() - plan.replacementRanges().slotStart()
-        );
 
         ComponentMount parent = plan.activeTarget().getParent();
         SimpleVec2i resultSize = activeBuild.size();
@@ -275,6 +259,8 @@ public class UIBuilder {
             activeBuild.rootMounts().clear();
             activeBuild.rootMounts().add(candidateTarget);
             resultSize = plan.candidate().size();
+            candidateTarget.setSavedLayout(plan.activeTarget().getSavedLayout().copy());
+            candidateTarget.setSavedTheme(plan.activeTarget().getSavedTheme());
         } else {
             plan.activeTarget().replaceWith(candidateTarget);
         }
@@ -282,21 +268,8 @@ public class UIBuilder {
         promoteStagedStates(plan.candidate());
 
         List<ComponentMount> activeRoots = activeBuild.rootMounts();
-        BuildResult indexedBeforeTailShift = indexBuild(resultSize, mainContext, activeRoots);
-        for (ComponentMount mount : indexedBeforeTailShift.preorderMounts()) {
-            if (mount.getArtifactContext() == plan.targetContext() && mount.getRanges().renderableStart() >= oldRanges.renderableEnd()) {
-                mount.setRanges(mount.getRanges().shiftedBy(
-                        plan.renderableDelta(),
-                        plan.tooltipDelta(),
-                        plan.dynamicDelta(),
-                        plan.listenerDelta(),
-                        plan.slotDelta()
-                ));
-            }
-        }
-
-        growAncestorRangeEnds(plan.activeTarget(), plan.targetContext(), plan.renderableDelta(), plan.tooltipDelta(), plan.dynamicDelta(), plan.listenerDelta(), plan.slotDelta());
-
+        BuildResult updated = indexBuild(resultSize, mainContext, activeRoots);
+        rebuildRuntimeCaches(mainContext, updated.preorderMounts());
         return indexBuild(resultSize, mainContext, activeRoots);
     }
 

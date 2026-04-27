@@ -3,11 +3,16 @@ package com.github.wintersteve25.tau.build;
 import com.github.wintersteve25.tau.components.base.DynamicUIComponent;
 import com.github.wintersteve25.tau.components.base.PrimitiveUIComponent;
 import com.github.wintersteve25.tau.components.base.UIComponent;
+import com.github.wintersteve25.tau.components.interactable.Button;
+import com.github.wintersteve25.tau.components.layout.Center;
+import com.github.wintersteve25.tau.components.utils.Sized;
 import com.github.wintersteve25.tau.layout.Layout;
 import com.github.wintersteve25.tau.theme.Theme;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
+import com.github.wintersteve25.tau.utils.Size;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -41,6 +46,32 @@ class UIBuilderIntegrationTest {
         final UIComponent child;
         TestWrapper(UIComponent child) { this.child = child; }
         @Override public UIComponent build(Layout layout, Theme theme) { return child; }
+    }
+
+    static class ToggleSizeDynamic extends DynamicUIComponent implements PrimitiveUIComponent {
+        boolean expanded;
+
+        @Override public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
+            return expanded ? new SimpleVec2i(260, 140) : new SimpleVec2i(140, 60);
+        }
+
+        @Override public UIComponent build(Layout layout, Theme theme) { return null; }
+    }
+
+    static class ClickDrivenDynamic extends DynamicUIComponent {
+        boolean expanded;
+
+        @Override public UIComponent build(Layout layout, Theme theme) {
+            return new Sized(
+                    expanded ? Size.staticSize(260, 140) : Size.staticSize(140, 60),
+                    new Button.Builder()
+                            .withOnPress(btn -> {
+                                expanded = !expanded;
+                                rebuild();
+                            })
+                            .build(new Center(new TestLeaf(new SimpleVec2i(20, 10))))
+            );
+        }
     }
 
     @Test
@@ -162,5 +193,151 @@ class UIBuilderIntegrationTest {
         BuildResult second = UIBuilder.rebuildFrom(target);
         assertNotNull(second);
         assertSame(leaf, second.rootMounts().get(0).getOwner());
+    }
+
+    @Test
+    void consecutive_partial_commits_work_with_same_dynamic() {
+        TestDynamic dynamic = new TestDynamic(new SimpleVec2i(50, 30));
+        BuildResult active = UIBuilder.buildTree(new Layout(200, 200), mock(Theme.class), dynamic);
+        BuildContext ctx = active.context();
+
+        // first dirty → partial commit
+        dynamic.dirty = true;
+        ComponentMount dirtyMount = active.dynamicMounts().get(0);
+        PartialCommitPlan plan1 = UIBuilder.planPartialCommit(dirtyMount, ctx);
+        assertNotNull(plan1, "first planPartialCommit should succeed");
+        active = UIBuilder.applyPartialCommit(active, plan1, ctx);
+        assertEquals(2, dynamic.buildCount.get());
+
+        // second dirty → partial commit
+        dynamic.dirty = true;
+        dirtyMount = active.dynamicMounts().get(0);
+        PartialCommitPlan plan2 = UIBuilder.planPartialCommit(dirtyMount, ctx);
+        assertNotNull(plan2, "second planPartialCommit should succeed");
+        active = UIBuilder.applyPartialCommit(active, plan2, ctx);
+        assertEquals(3, dynamic.buildCount.get());
+    }
+
+    @Test
+    void consecutive_partial_commits_with_nested_dynamic() {
+        TestDynamic dynamic = new TestDynamic(new SimpleVec2i(50, 30));
+        UIComponent root = new TestWrapper(dynamic);
+        BuildResult active = UIBuilder.buildTree(new Layout(200, 200), mock(Theme.class), root);
+        BuildContext ctx = active.context();
+
+        // first dirty → partial commit of nested dynamic
+        dynamic.dirty = true;
+        ComponentMount dirtyMount = active.dynamicMounts().get(0);
+        PartialCommitPlan plan1 = UIBuilder.planPartialCommit(dirtyMount, ctx);
+        assertNotNull(plan1, "first planPartialCommit for nested dynamic should succeed");
+        active = UIBuilder.applyPartialCommit(active, plan1, ctx);
+
+        // second dirty → partial commit
+        dynamic.dirty = true;
+        dirtyMount = active.dynamicMounts().get(0);
+        PartialCommitPlan plan2 = UIBuilder.planPartialCommit(dirtyMount, ctx);
+        assertNotNull(plan2, "second planPartialCommit for nested dynamic should succeed");
+        active = UIBuilder.applyPartialCommit(active, plan2, ctx);
+    }
+
+    @Test
+    void root_partial_commit_handles_size_toggle_back_and_forth() {
+        ToggleSizeDynamic dynamic = new ToggleSizeDynamic();
+        BuildResult active = UIBuilder.buildTree(new Layout(400, 300), mock(Theme.class), dynamic);
+        BuildContext ctx = active.context();
+
+        dynamic.expanded = true;
+        dynamic.dirty = true;
+        ComponentMount dirtyMount = active.dynamicMounts().get(0);
+        PartialCommitPlan plan1 = UIBuilder.planPartialCommit(dirtyMount, ctx);
+        assertNotNull(plan1, "first root size-changing partial commit should succeed");
+        active = UIBuilder.applyPartialCommit(active, plan1, ctx);
+        assertEquals(260, active.rootMounts().get(0).getBuiltSize().x);
+        assertEquals(140, active.rootMounts().get(0).getBuiltSize().y);
+
+        dynamic.expanded = false;
+        dynamic.dirty = true;
+        dirtyMount = active.dynamicMounts().get(0);
+        PartialCommitPlan plan2 = UIBuilder.planPartialCommit(dirtyMount, ctx);
+        assertNotNull(plan2, "second root size-changing partial commit should also succeed");
+        active = UIBuilder.applyPartialCommit(active, plan2, ctx);
+        assertEquals(140, active.rootMounts().get(0).getBuiltSize().x);
+        assertEquals(60, active.rootMounts().get(0).getBuiltSize().y);
+    }
+
+    @Test
+    void listener_cache_is_rebuilt_after_partial_commit() {
+        ClickDrivenDynamic dynamic = new ClickDrivenDynamic();
+        BuildResult active = UIBuilder.buildTree(new Layout(400, 300), mock(Theme.class), dynamic);
+        BuildContext ctx = active.context();
+
+        long guiListenerCount = active.preorderMounts().stream()
+                .filter(m -> m.getOwner() instanceof net.minecraft.client.gui.components.events.GuiEventListener)
+                .count();
+        assertEquals(guiListenerCount, ctx.eventListeners().size());
+
+        dynamic.expanded = true;
+        dynamic.dirty = true;
+        PartialCommitPlan plan = UIBuilder.planPartialCommit(active.dynamicMounts().get(0), ctx);
+        assertNotNull(plan);
+        active = UIBuilder.applyPartialCommit(active, plan, ctx);
+
+        guiListenerCount = active.preorderMounts().stream()
+                .filter(m -> m.getOwner() instanceof net.minecraft.client.gui.components.events.GuiEventListener)
+                .count();
+        assertEquals(guiListenerCount, ctx.eventListeners().size());
+
+        dynamic.expanded = false;
+        dynamic.dirty = true;
+        plan = UIBuilder.planPartialCommit(active.dynamicMounts().get(0), ctx);
+        assertNotNull(plan);
+        active = UIBuilder.applyPartialCommit(active, plan, ctx);
+
+        guiListenerCount = active.preorderMounts().stream()
+                .filter(m -> m.getOwner() instanceof net.minecraft.client.gui.components.events.GuiEventListener)
+                .count();
+        assertEquals(guiListenerCount, ctx.eventListeners().size());
+    }
+
+    @Test
+    void repeated_partial_commits_keep_renderable_count_stable() {
+        ClickDrivenDynamic dynamic = new ClickDrivenDynamic();
+        BuildResult active = UIBuilder.buildTree(new Layout(400, 300), mock(Theme.class), dynamic);
+        BuildContext ctx = active.context();
+
+        int initialRenderables = ctx.renderables().size();
+
+        for (int i = 0; i < 6; i++) {
+            dynamic.expanded = !dynamic.expanded;
+            dynamic.dirty = true;
+            PartialCommitPlan plan = UIBuilder.planPartialCommit(active.dynamicMounts().get(0), ctx);
+            assertNotNull(plan);
+            active = UIBuilder.applyPartialCommit(active, plan, ctx);
+            assertEquals(initialRenderables, ctx.renderables().size(), "renderable count must remain stable after commit #" + i);
+        }
+    }
+
+    @Test
+    void repeated_partial_commits_preserve_mount_size_transitions() {
+        ToggleSizeDynamic dynamic = new ToggleSizeDynamic();
+        BuildResult active = UIBuilder.buildTree(new Layout(400, 300), mock(Theme.class), dynamic);
+        BuildContext ctx = active.context();
+
+        int[][] expectedSizes = {
+                {260, 140},
+                {140, 60},
+                {260, 140},
+                {140, 60}
+        };
+
+        for (int i = 0; i < expectedSizes.length; i++) {
+            dynamic.expanded = !dynamic.expanded;
+            dynamic.dirty = true;
+            PartialCommitPlan plan = UIBuilder.planPartialCommit(active.dynamicMounts().get(0), ctx);
+            assertNotNull(plan);
+            active = UIBuilder.applyPartialCommit(active, plan, ctx);
+            assertEquals(expectedSizes[i][0], active.rootMounts().get(0).getBuiltSize().x, "unexpected width on commit #" + i);
+            assertEquals(expectedSizes[i][1], active.rootMounts().get(0).getBuiltSize().y, "unexpected height on commit #" + i);
+        }
     }
 }

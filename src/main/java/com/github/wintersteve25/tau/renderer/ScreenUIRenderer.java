@@ -158,22 +158,22 @@ public class ScreenUIRenderer extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        return dispatcher.mouseClicked(mouseX, mouseY, button) || super.mouseClicked(mouseX, mouseY, button);
+        return dispatcher.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        return dispatcher.mouseReleased(mouseX, mouseY, button) || super.mouseReleased(mouseX, mouseY, button);
+        return dispatcher.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        return dispatcher.mouseDragged(mouseX, mouseY, button, dragX, dragY) || super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        return dispatcher.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        return dispatcher.mouseScrolled(mouseX, mouseY, scrollX, scrollY) || super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return dispatcher.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
@@ -204,12 +204,10 @@ public class ScreenUIRenderer extends Screen {
     @Override
     public void setFocused(GuiEventListener listener) {
         dispatcher.setFocused(listener);
-        super.setFocused(listener);
     }
 
     @Override
     public void mouseMoved(double mouseX, double mouseY) {
         dispatcher.children().forEach(listener -> listener.mouseMoved(mouseX, mouseY));
-        super.mouseMoved(mouseX, mouseY);
     }
 }
