@@ -11,14 +11,16 @@ import com.github.wintersteve25.tau.theme.Theme;
 import com.github.wintersteve25.tau.utils.FlexSizeBehaviour;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Vertical layout component that places children top-to-bottom.
  */
 public final class Column implements PrimitiveUIComponent {
 
-    private final Iterable<UIComponent> children;
+    private final List<UIComponent> children;
     private final int spacing;
     private final FlexSizeBehaviour sizeBehaviour;
     private final LayoutSetting alignment;
@@ -32,10 +34,16 @@ public final class Column implements PrimitiveUIComponent {
      * @param alignment     horizontal alignment applied to children
      */
     public Column(int spacing, FlexSizeBehaviour sizeBehaviour, Iterable<UIComponent> children, LayoutSetting alignment) {
-        this.children = children;
+        this.children = copyChildren(children);
         this.spacing = spacing;
         this.sizeBehaviour = sizeBehaviour;
         this.alignment = alignment;
+    }
+
+    private static List<UIComponent> copyChildren(Iterable<UIComponent> children) {
+        List<UIComponent> copied = new ArrayList<>();
+        children.forEach(copied::add);
+        return List.copyOf(copied);
     }
 
     /**

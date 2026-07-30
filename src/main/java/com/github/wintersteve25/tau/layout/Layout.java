@@ -56,14 +56,14 @@ public class Layout {
      * Returns current width after size modifications.
      */
     public int getWidth() {
-        return width + sizeModification.getLast(Axis.HORIZONTAL);
+        return width + getSizeModification(Axis.HORIZONTAL);
     }
 
     /**
      * Returns current height after size modifications.
      */
     public int getHeight() {
-        return height + sizeModification.getLast(Axis.VERTICAL);
+        return height + getSizeModification(Axis.VERTICAL);
     }
 
     /**
@@ -144,6 +144,23 @@ public class Layout {
 
         for (int offset : offsets.get(axis)) {
             result += offset;
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns the accumulated size adjustment for an axis.
+     * <p>
+     * Size modifiers are scoped in the same way as offsets. Reading only the
+     * top stack value would let an inner padding override, rather than refine,
+     * an outer padding constraint.
+     */
+    private int getSizeModification(Axis axis) {
+        int result = 0;
+
+        for (int modification : sizeModification.get(axis)) {
+            result += modification;
         }
 
         return result;
