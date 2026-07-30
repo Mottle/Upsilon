@@ -9,7 +9,6 @@ import com.github.wintersteve25.tau.theme.Theme;
 import com.github.wintersteve25.tau.utils.ClientSoundHelper;
 import com.github.wintersteve25.tau.utils.InteractableState;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
-import moe.liar.upsilon.Upsilon;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 
 import java.util.function.Consumer;
@@ -68,17 +67,6 @@ public final class Button implements PrimitiveUIComponent, GuiEventListener, Mou
      */
     @Override
     public boolean mouseClicked(double pMouseX, double pMouseY, int pButton) {
-        ButtonMountState state = activeMountState;
-        Upsilon.LOGGER.info("[diag2] Button id={} click x={} y={} hovered={} state={} rect=({}, {}, {}, {})",
-                System.identityHashCode(this),
-                pMouseX,
-                pMouseY,
-                isHovered((int) pMouseX, (int) pMouseY),
-                state,
-                state == null ? -1 : state.x,
-                state == null ? -1 : state.y,
-                state == null ? -1 : state.width,
-                state == null ? -1 : state.height);
         if (pButton == 0 && onPress != null && isHovered((int) pMouseX, (int) pMouseY)) {
             onPress.accept(pButton);
             ClientSoundHelper.playButtonClick();
@@ -127,8 +115,6 @@ public final class Button implements PrimitiveUIComponent, GuiEventListener, Mou
     @Override
     public void setActiveMountState(ButtonMountState state) {
         this.activeMountState = state;
-        Upsilon.LOGGER.info("[diag2] Button id={} setActiveMountState rect=({}, {}, {}, {})",
-                System.identityHashCode(this), state.x, state.y, state.width, state.height);
     }
 
     public static final class Builder {
