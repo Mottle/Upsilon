@@ -6,12 +6,10 @@ import com.github.wintersteve25.tau.build.UIBuilder;
 import com.github.wintersteve25.tau.components.base.PrimitiveUIComponent;
 import com.github.wintersteve25.tau.components.base.UIComponent;
 import com.github.wintersteve25.tau.layout.Layout;
+import com.github.wintersteve25.tau.renderer.ScissorRenderer;
 import com.github.wintersteve25.tau.theme.Theme;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
 import com.github.wintersteve25.tau.utils.Size;
-import com.mojang.blaze3d.platform.Window;
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Renderable;
 
 import java.util.ArrayList;
@@ -60,28 +58,12 @@ public final class Clip implements PrimitiveUIComponent {
             childSize = UIBuilder.build(layout, theme, child, innerContext);
         }
 
-        Window window = Minecraft.getInstance().getWindow();
+        SimpleVec2i clipSize = size.get(childSize);
+        SimpleVec2i clipPosition = layout.getPosition(childSize);
+        clipPosition.add(offset);
 
-        SimpleVec2i scaledClipSize = size.get(childSize);
-        SimpleVec2i scaledPosition = layout.getPosition(childSize);
-        scaledPosition.add(offset);
-
-        double guiScale = window.getGuiScale();
-
-        int glX = (int) (scaledPosition.x * guiScale);
-        int glY = (int) ((window.getGuiScaledHeight() - (scaledPosition.y + scaledClipSize.y)) * guiScale);
-        int glWidth = (int) (scaledClipSize.x * guiScale);
-        int glHeight = (int) (scaledClipSize.y * guiScale);
-
-        Renderable clipped = (graphics, pMouseX, pMouseY, pPartialTicks) -> {
-            RenderSystem.enableScissor(glX, glY, glWidth, glHeight);
-
-            for (Renderable renderable : childrenRenderables) {
-                renderable.render(graphics, pMouseX, pMouseY, pPartialTicks);
-            }
-
-            RenderSystem.disableScissor();
-        };
+        Renderable clipped = (graphics, pMouseX, pMouseY, pPartialTicks) ->
+                ScissorRenderer.render(graphics, clipPosition.x, clipPosition.y, clipSize.x, clipSize.y, childrenRenderables, pMouseX, pMouseY, pPartialTicks);
 
         if (session != null) {
             session.addRenderable(clipped);

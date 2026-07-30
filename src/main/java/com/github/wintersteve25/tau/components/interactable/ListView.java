@@ -8,12 +8,9 @@ import com.github.wintersteve25.tau.components.layout.Column;
 import com.github.wintersteve25.tau.layout.Axis;
 import com.github.wintersteve25.tau.layout.Layout;
 import com.github.wintersteve25.tau.layout.LayoutSetting;
+import com.github.wintersteve25.tau.renderer.ScissorRenderer;
 import com.github.wintersteve25.tau.theme.Theme;
 import com.github.wintersteve25.tau.utils.SimpleVec2i;
-import com.mojang.blaze3d.platform.Window;
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -27,8 +24,9 @@ import java.util.Optional;
 /**
  * Scrollable vertical list container with clipping and input forwarding.
  * <p>
- * The component caches measured content height per viewport size and updates
- * scroll offset without requesting a full dynamic rebuild on each wheel event.
+ * The component caches measured content height per viewport size. A scroll
+ * change requests a partial rebuild so child render positions stay synchronized
+ * with hit testing.
  */
 public final class ListView extends DynamicUIComponent implements PrimitiveUIComponent, ContainerEventHandler, MountStateHost<ListView.ListViewMountState> {
 
@@ -62,6 +60,9 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
     public SimpleVec2i build(Layout layout, Theme theme, BuildContext context) {
         BuildSession session = UIBuilder.currentSession();
         ListViewMountState state = null;
+        ListViewMountState previousState = activeMountState;
+        GuiEventListener previousFocused = previousState == null ? null : previousState.focused;
+        boolean previousDragging = previousState != null && previousState.dragging;
         if (session != null && session.getMode() == BuildMode.MOUNTED_COMMITTABLE) {
             state = session.getOrCreateStagedState(this, ListViewMountState::new);
         }
@@ -124,17 +125,10 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
             childLayout.popLayoutSetting(Axis.HORIZONTAL);
         }
 
-        Window window = Minecraft.getInstance().getWindow();
-        double guiScale = window.getGuiScale();
-        int glX = (int) (position.x * guiScale);
-        int glY = (int) ((window.getGuiScaledHeight() - (position.y + size.y)) * guiScale);
-        int glWidth = (int) (size.x * guiScale);
-        int glHeight = (int) (size.y * guiScale);
-
         if (session != null) {
-            session.addRenderable((graphics, pMouseX, pMouseY, pPartialTicks) -> renderClipped(graphics, childRenderables, glX, glY, glWidth, glHeight, pMouseX, pMouseY, pPartialTicks));
+            session.addRenderable((graphics, pMouseX, pMouseY, pPartialTicks) -> ScissorRenderer.render(graphics, position.x, position.y, size.x, size.y, childRenderables, pMouseX, pMouseY, pPartialTicks));
         } else {
-            context.renderables().add((graphics, pMouseX, pMouseY, pPartialTicks) -> renderClipped(graphics, childRenderables, glX, glY, glWidth, glHeight, pMouseX, pMouseY, pPartialTicks));
+            context.renderables().add((graphics, pMouseX, pMouseY, pPartialTicks) -> ScissorRenderer.render(graphics, position.x, position.y, size.x, size.y, childRenderables, pMouseX, pMouseY, pPartialTicks));
         }
 
         if (state != null) {
@@ -144,6 +138,8 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
             state.measuredContentHeight = measuredContentHeight;
             state.measuredViewport = measuredViewport;
             state.childRenderables = childRenderables;
+            state.focused = resolveFocusedChild(childEventListeners, previousFocused);
+            state.dragging = state.focused != null && previousDragging;
         }
 
         return size;
@@ -163,16 +159,13 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
             return false;
         }
 
-        if (scrollOffset >= state.maxScroll && pScrollY < 0) {
+        int nextScrollOffset = scrollBy(scrollOffset, state.maxScroll, pScrollY);
+        if (nextScrollOffset == scrollOffset) {
             return false;
         }
 
-        if (scrollOffset >= 0 && pScrollY > 0) {
-            return false;
-        }
-
-        scrollOffset += pScrollY > 0 ? scrollSensitivity : -scrollSensitivity;
-        scrollOffset = clamp(scrollOffset, -state.maxScroll, 0);
+        scrollOffset = nextScrollOffset;
+        rebuild();
 
         return true;
     }
@@ -187,11 +180,11 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
     }
 
     /**
-     * Returns false because focus is delegated to children.
+     * Returns whether a child inside this list currently owns focus.
      */
     @Override
     public boolean isFocused() {
-        return false;
+        return getFocused() != null;
     }
 
     /**
@@ -199,30 +192,39 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
      */
     @Override
     public List<? extends GuiEventListener> children() {
+        clearFocusedIfMissing();
         return activeMountState == null ? List.of() : activeMountState.childEventListeners;
     }
 
     /**
-     * List view does not keep a direct focused child reference.
+     * Returns the focused child, if it remains in the active listener subtree.
      */
     @Nullable
     @Override
     public GuiEventListener getFocused() {
-        return null;
+        clearFocusedIfMissing();
+        return activeMountState == null ? null : activeMountState.focused;
     }
 
     /**
-     * List view does not track a focused state directly.
+     * Clears child focus when the parent dispatcher loses focus.
      */
     @Override
     public void setFocused(boolean pFocused) {
+        if (!pFocused && activeMountState != null) {
+            activeMountState.focused = null;
+            activeMountState.dragging = false;
+        }
     }
 
     /**
-     * List view does not keep its own focused child reference.
+     * Records the focused child selected by the container event handler.
      */
     @Override
     public void setFocused(@Nullable GuiEventListener pFocused) {
+        if (activeMountState != null) {
+            activeMountState.focused = pFocused;
+        }
     }
 
     /**
@@ -230,6 +232,7 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
      */
     @Override
     public Optional<GuiEventListener> getChildAt(double pMouseX, double pMouseY) {
+        clearFocusedIfMissing();
         if (!isMouseOver(pMouseX, pMouseY)) {
             return Optional.empty();
         }
@@ -237,18 +240,21 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
     }
 
     /**
-     * Drag state is not tracked by this container.
+     * Returns whether the focused child is currently being dragged.
      */
     @Override
     public boolean isDragging() {
-        return false;
+        return activeMountState != null && activeMountState.dragging;
     }
 
     /**
-     * Drag state setter is a no-op for this container.
+     * Updates drag state set by the container event handler.
      */
     @Override
     public void setDragging(boolean pIsDragging) {
+        if (activeMountState != null) {
+            activeMountState.dragging = pIsDragging;
+        }
     }
 
     /**
@@ -256,6 +262,7 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
      */
     @Override
     public boolean mouseClicked(double pMouseX, double pMouseY, int pButton) {
+        clearFocusedIfMissing();
         if (!isMouseOver(pMouseX, pMouseY)) {
             return false;
         }
@@ -267,6 +274,7 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
      */
     @Override
     public boolean mouseReleased(double pMouseX, double pMouseY, int pButton) {
+        clearFocusedIfMissing();
         return ContainerEventHandler.super.mouseReleased(pMouseX, pMouseY - scrollOffset, pButton);
     }
 
@@ -275,28 +283,40 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
      */
     @Override
     public boolean mouseDragged(double pMouseX, double pMouseY, int pButton, double pDragX, double pDragY) {
+        clearFocusedIfMissing();
         return ContainerEventHandler.super.mouseDragged(pMouseX, pMouseY - scrollOffset, pButton, pDragX, pDragY);
     }
 
-    /**
-     * Renders child content inside a scissor region.
-     */
-    private void renderClipped(GuiGraphics graphics, List<Renderable> childRenderables, int glX, int glY, int glWidth, int glHeight, int mouseX, int mouseY, float partialTicks) {
-        RenderSystem.enableScissor(glX, glY, glWidth, glHeight);
+    @Override
+    public boolean keyPressed(int pKeyCode, int pScanCode, int pModifiers) {
+        GuiEventListener focused = getFocused();
+        return focused != null && focused.keyPressed(pKeyCode, pScanCode, pModifiers);
+    }
 
-        try {
-            for (Renderable renderable : childRenderables) {
-                renderable.render(graphics, mouseX, mouseY, partialTicks);
-            }
-        } finally {
-            RenderSystem.disableScissor();
-        }
+    @Override
+    public boolean keyReleased(int pKeyCode, int pScanCode, int pModifiers) {
+        GuiEventListener focused = getFocused();
+        return focused != null && focused.keyReleased(pKeyCode, pScanCode, pModifiers);
+    }
+
+    @Override
+    public boolean charTyped(char pCodePoint, int pModifiers) {
+        GuiEventListener focused = getFocused();
+        return focused != null && focused.charTyped(pCodePoint, pModifiers);
     }
 
     /**
      * Clamps an integer value to an inclusive range.
      */
-    private int clamp(int x, int min, int max) {
+    static int scrollBy(int currentScrollOffset, int maxScroll, double scrollAmount) {
+        if (scrollAmount == 0) {
+            return currentScrollOffset;
+        }
+        int delta = scrollAmount > 0 ? scrollSensitivity : -scrollSensitivity;
+        return clamp(currentScrollOffset + delta, -maxScroll, 0);
+    }
+
+    private static int clamp(int x, int min, int max) {
         if (x < min) {
             return min;
         }
@@ -312,6 +332,26 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
     @Override
     public void setActiveMountState(ListViewMountState state) {
         this.activeMountState = state;
+    }
+
+    int getScrollOffset() {
+        return scrollOffset;
+    }
+
+    private void clearFocusedIfMissing() {
+        if (activeMountState != null
+                && activeMountState.focused != null
+                && !activeMountState.childEventListeners.contains(activeMountState.focused)) {
+            activeMountState.focused = null;
+            activeMountState.dragging = false;
+        }
+    }
+
+    static GuiEventListener resolveFocusedChild(List<GuiEventListener> children, GuiEventListener previousFocused) {
+        if (children.contains(previousFocused)) {
+            return previousFocused;
+        }
+        return children.stream().filter(GuiEventListener::isFocused).findFirst().orElse(null);
     }
 
     public static final class Builder {
@@ -363,5 +403,7 @@ public final class ListView extends DynamicUIComponent implements PrimitiveUICom
         SimpleVec2i measuredViewport = SimpleVec2i.zero();
         List<GuiEventListener> childEventListeners = new ArrayList<>();
         List<Renderable> childRenderables = new ArrayList<>();
+        boolean dragging;
+        GuiEventListener focused;
     }
 }
