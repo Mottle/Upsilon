@@ -16,7 +16,8 @@ import java.util.List;
 /**
  * HUD renderer for component trees rendered outside a {@link net.minecraft.client.gui.screens.Screen}.
  * <p>
- * Rebuilds when dynamic components request it or when HUD dimensions change.
+ * Applies partial commits for dynamic changes where safe, and performs a full
+ * rebuild when HUD dimensions change or a partial commit is unsafe.
  */
 public class HudUIRenderer {
     private final UIComponent uiComponent;

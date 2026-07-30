@@ -30,6 +30,7 @@ Project baseline:
 Common commands:
 
 - build: `bash gradlew build`
+- test: `bash gradlew test`
 - run client: `bash gradlew runClient`
 - run server: `bash gradlew runServer`
 
@@ -262,7 +263,9 @@ Options:
 - `new ScreenUIRenderer(component, renderBackground)`
 - `new ScreenUIRenderer(component, renderBackground, theme)`
 
-The renderer handles dynamic component tick + full rebuild when needed.
+The renderer handles dynamic component ticks. It applies a mounted partial
+commit where safe and falls back to a full rebuild when a subtree cannot be
+updated safely.
 
 ## 10. Hosting In HUD
 
@@ -275,10 +278,13 @@ hud.tick();
 hud.render(window, guiGraphics, partialTicks);
 ```
 
-`HudUIRenderer` rebuilds when:
+`HudUIRenderer` refreshes when:
 
 - a dynamic component marks dirty
 - GUI scaled width/height changes
+
+Dirty dynamic subtrees use a partial commit where possible; a viewport resize
+always rebuilds the HUD tree.
 
 ## 11. Dynamic UI Patterns
 
@@ -288,7 +294,8 @@ Pattern:
 
 1. store mutable state in fields / `Variable<T>`
 2. trigger `rebuild()` on interaction/state change
-3. renderer rebuilds full component tree next tick
+3. renderer refreshes the affected mounted subtree on the next tick when safe,
+   otherwise rebuilds the full component tree
 
 Reference example: `src/main/java/com/github/wintersteve25/tau/tests/TestDynamic.java`.
 
@@ -322,6 +329,11 @@ Built-ins:
 
 - `ItemSlotHandler` for single item handler slot
 - `PlayerInventoryHandler` for 3-row inventory + hotbar
+
+If one UI descriptor materializes multiple vanilla slots, implement
+`ISlotHandler#getSlotCount()` and `getSlotOffset(int)` as well. The offset is
+relative to the descriptor origin; the screen applies its one-pixel slot-frame
+inset.
 
 ## 13. Input And Event Notes
 

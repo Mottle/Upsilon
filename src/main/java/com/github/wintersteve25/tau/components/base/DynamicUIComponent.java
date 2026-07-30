@@ -5,10 +5,11 @@ import com.github.wintersteve25.tau.layout.Layout;
 import com.github.wintersteve25.tau.theme.Theme;
 
 /**
- * Stateful component that can request a full renderer rebuild.
+ * Stateful component that can request a UI rebuild.
  * <p>
- * A dynamic component marks itself dirty via {@link #rebuild()}. Renderers then
- * trigger a full UI rebuild on the next tick.
+ * A dynamic component marks itself dirty via {@link #rebuild()}. Renderers
+ * first attempt a mounted partial commit on the next tick and fall back to a
+ * full rebuild when the subtree cannot safely be committed in place.
  */
 public abstract class DynamicUIComponent implements UIComponent {
 
@@ -30,7 +31,7 @@ public abstract class DynamicUIComponent implements UIComponent {
     }
 
     /**
-     * Marks this component dirty so the owning renderer rebuilds the full UI tree.
+     * Marks this component dirty so the owning renderer refreshes its UI tree.
      */
     protected void rebuild() {
         dirty = true;

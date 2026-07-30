@@ -18,7 +18,8 @@ import java.util.List;
 /**
  * Adapts a {@link UIComponent} tree into a Minecraft {@link Screen}.
  * <p>
- * The renderer rebuilds its full component tree when dynamic components request it.
+ * Dynamic changes use mounted partial commits where safe and fall back to a
+ * full component-tree rebuild when necessary.
  */
 public class ScreenUIRenderer extends Screen {
 
@@ -110,7 +111,7 @@ public class ScreenUIRenderer extends Screen {
     }
 
     /**
-     * Ticks dynamic components and rebuilds tree when marked dirty.
+     * Ticks dynamic components and refreshes dirty mounted subtrees.
      */
     @Override
     public void tick() {

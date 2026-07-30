@@ -1,4 +1,11 @@
-# v2.0.0 Neoforge-1.20.6 Major Update - Changes since Upsilon 1.0.3-1.19
+# Upsilon changelog
+
+> The current branch targets Minecraft 1.21.1 / NeoForge 21.1.20 and derives
+> its artifact version from `gradle.properties` (currently `2.0.4`). The
+> entries below are historical release notes and retain the platform versions
+> used at publication time.
+
+## v2.0.0 NeoForge-1.20.6 — Changes since Upsilon 1.0.3-1.19
 ## API Changes
 - `Vector2i` renamed to `SimpleVec2i`
 - Theme signature changes to work with the new Minecraft `GuiGraphics` API

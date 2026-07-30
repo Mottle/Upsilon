@@ -390,7 +390,12 @@ public class UIBuilder {
     }
 
     /**
-     * Ticks dynamic components and reports whether the owning renderer should rebuild the full UI tree.
+     * Ticks an unmounted dynamic-component list and reports whether any member
+     * requested a refresh.
+     * <p>
+     * Mounted renderers use {@link #collectDirtyDynamicMounts(BuildResult)} so
+     * they can plan partial commits. This helper remains useful to callers
+     * without a mount tree, which decide their own refresh strategy.
      *
      * @param dynamicUIComponents dynamic components currently registered in the renderer
      * @return {@code true} if any component requested rebuild via {@code DynamicUIComponent#rebuild()}

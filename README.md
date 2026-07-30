@@ -68,6 +68,7 @@ Project baseline in this branch:
 Common commands:
 
 - Build jar: `bash gradlew build`
+- Run JVM tests: `bash gradlew test`
 - Run client: `bash gradlew runClient`
 - Run server: `bash gradlew runServer`
 - Run datagen: `bash gradlew runData`
@@ -78,11 +79,15 @@ Common commands:
 - Architecture guide: [`docs/architecture.md`](docs/architecture.md)
 - Agent guide: [`docs/agent-guide.md`](docs/agent-guide.md)
 
-## Manual Test Screens
+## Testing
 
-This repository currently validates behavior manually in-game.
+JVM regression tests cover build-pipeline, layout, list-input, and menu-slot
+invariants. Run them with `bash gradlew test`.
+
+Visual and game-input behavior still needs in-game validation:
 
 - test hub: `src/main/java/com/github/wintersteve25/tau/tests/TestAll.java`
+- launch the development client and press `,` to open the test hub
 
 ## Project Metadata
 
