@@ -1,6 +1,7 @@
 package com.github.wintersteve25.tau.menu.handlers;
 
 import com.github.wintersteve25.tau.menu.TauContainerMenu;
+import com.github.wintersteve25.tau.utils.SimpleVec2i;
 import com.github.wintersteve25.tau.utils.Variable;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
@@ -43,6 +44,22 @@ public class PlayerInventoryHandler implements ISlotHandler {
     @Override
     public Object getStructureKey() {
         return getClass().getName() + ":player-inventory";
+    }
+
+    @Override
+    public int getSlotCount() {
+        return 36;
+    }
+
+    @Override
+    public SimpleVec2i getSlotOffset(int slotIndex) {
+        if (slotIndex < 0 || slotIndex >= getSlotCount()) {
+            throw new IndexOutOfBoundsException("Player inventory slot index out of range: " + slotIndex);
+        }
+        if (slotIndex < 27) {
+            return new SimpleVec2i((slotIndex % 9) * 18, (slotIndex / 9) * 18);
+        }
+        return new SimpleVec2i((slotIndex - 27) * 18, 58);
     }
 
     /**

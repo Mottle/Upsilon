@@ -90,7 +90,7 @@ public interface UIMenu {
      * Handles quick-move/shift-click behavior.
      */
     default ItemStack quickMoveStack(TauContainerMenu menu, Player player, int index) {
-        return null;
+        return ItemStack.EMPTY;
     }
 
     /**

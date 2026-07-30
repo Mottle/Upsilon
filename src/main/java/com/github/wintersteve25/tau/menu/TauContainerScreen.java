@@ -6,6 +6,8 @@ import com.github.wintersteve25.tau.layout.Axis;
 import com.github.wintersteve25.tau.layout.Layout;
 import com.github.wintersteve25.tau.renderer.RootInputDispatcher;
 import com.github.wintersteve25.tau.theme.Theme;
+import com.github.wintersteve25.tau.utils.SimpleVec2i;
+import moe.liar.upsilon.Upsilon;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -28,12 +30,13 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
     private final boolean renderBackground;
     private final Theme theme;
     private final RootInputDispatcher dispatcher;
+    private final MouseGestureCapture mouseGestureCapture;
     private BuildContext mainContext;
     private BuildResult activeBuild;
     private List<DynamicUIComponent> dynamicUIComponents;
-    private List<Object> activeSlotStructureKeys;
     private int activeSlotStructureVersion;
     private boolean stale;
+    private boolean slotMappingInvalid;
 
     private boolean built;
 
@@ -49,7 +52,7 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
         this.activeBuild = null;
         this.dynamicUIComponents = new ArrayList<>();
         this.dispatcher = new RootInputDispatcher(() -> mainContext.eventListeners());
-        this.activeSlotStructureKeys = List.of();
+        this.mouseGestureCapture = new MouseGestureCapture();
     }
 
     @Override
@@ -94,19 +97,18 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
         activeBuild = result;
         mainContext = result.context();
         dynamicUIComponents = new ArrayList<>(mainContext.dynamicUIComponents());
-        activeSlotStructureKeys = currentSlotStructureKeys(mainContext);
         activeSlotStructureVersion = menu.getSyncedSlotStructureVersion();
+        stale = false;
         applySlotVisualState(mainContext);
         dispatcher.clearFocusedIfMissing();
-        stale = false;
-    }
-
-    private List<Object> currentSlotStructureKeys(BuildContext context) {
-        return context.slots().stream().map(slot -> slot.handler().getStructureKey()).toList();
     }
 
     private boolean slotStructureChanged() {
-        return menu.getSyncedSlotStructureVersion() != activeSlotStructureVersion;
+        return slotStructureChanged(menu.getSyncedSlotStructureVersion(), activeSlotStructureVersion);
+    }
+
+    static boolean slotStructureChanged(int syncedVersion, int activeVersion) {
+        return syncedVersion != activeVersion;
     }
 
     private boolean slotSubtreeChanged(PartialCommitPlan plan) {
@@ -133,25 +135,60 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
 
         activeBuild = UIBuilder.applyPartialCommit(activeBuild, plan, mainContext);
         dynamicUIComponents = new ArrayList<>(mainContext.dynamicUIComponents());
-        applySlotVisualState(mainContext);
-        activeSlotStructureKeys = currentSlotStructureKeys(mainContext);
+        if (!applySlotVisualState(mainContext)) {
+            stale = true;
+            return false;
+        }
         activeSlotStructureVersion = menu.getSyncedSlotStructureVersion();
         dispatcher.clearFocusedIfMissing();
         return true;
     }
 
-    private void applySlotVisualState(BuildContext context) {
-        if (context.slots().size() != menu.slots.size()) {
-            stale = true;
-            return;
+    private boolean applySlotVisualState(BuildContext context) {
+        boolean applied = applySlotVisualState(context.slots(), menu.slots);
+        if (applied) {
+            slotMappingInvalid = false;
+            return true;
         }
 
-        for (int i = 0; i < context.slots().size(); i++) {
-            MenuSlot<?> descriptor = context.slots().get(i);
-            Slot slot = menu.slots.get(i);
-            slot.x = descriptor.pos().x + 1;
-            slot.y = descriptor.pos().y + 1;
+        if (!slotMappingInvalid) {
+            Upsilon.LOGGER.error(
+                    "Unable to align menu slots: UI descriptors materialize {} slots but the menu contains {} slots",
+                    materializedSlotCount(context.slots()),
+                    menu.slots.size()
+            );
         }
+        slotMappingInvalid = true;
+        return false;
+    }
+
+    static int materializedSlotCount(List<? extends MenuSlot<?>> descriptors) {
+        int count = 0;
+        for (MenuSlot<?> descriptor : descriptors) {
+            int handlerSlotCount = descriptor.handler().getSlotCount();
+            if (handlerSlotCount < 0) {
+                throw new IllegalArgumentException("Slot handler returned a negative slot count: " + descriptor.handler().getClass().getName());
+            }
+            count += handlerSlotCount;
+        }
+        return count;
+    }
+
+    static boolean applySlotVisualState(List<? extends MenuSlot<?>> descriptors, List<Slot> slots) {
+        if (materializedSlotCount(descriptors) != slots.size()) {
+            return false;
+        }
+
+        int materializedIndex = 0;
+        for (MenuSlot<?> descriptor : descriptors) {
+            for (int slotIndex = 0; slotIndex < descriptor.handler().getSlotCount(); slotIndex++) {
+                SimpleVec2i offset = descriptor.handler().getSlotOffset(slotIndex);
+                Slot slot = slots.get(materializedIndex++);
+                slot.x = descriptor.pos().x + offset.x + 1;
+                slot.y = descriptor.pos().y + offset.y + 1;
+            }
+        }
+        return true;
     }
 
     @Override
@@ -188,7 +225,7 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
     @Override
     public void containerTick() {
         if (!built) return;
-        if (stale) {
+        if (stale || slotStructureChanged()) {
             rebuildUi();
             uiMenu.tick(menu);
             return;
@@ -212,28 +249,38 @@ public class TauContainerScreen extends AbstractContainerScreen<TauContainerMenu
     @Override
     public void onClose() {
         clearDynamicComponents();
+        mouseGestureCapture.clear();
 
         super.onClose();
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        return dispatcher.mouseClicked(mouseX, mouseY, button);
+        if (mouseGestureCapture.onPressed(button, dispatcher.mouseClicked(mouseX, mouseY, button))) {
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        return dispatcher.mouseReleased(mouseX, mouseY, button);
+        if (mouseGestureCapture.onReleased(button, dispatcher.mouseReleased(mouseX, mouseY, button))) {
+            return true;
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        return dispatcher.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        if (mouseGestureCapture.onDragged(button, dispatcher.mouseDragged(mouseX, mouseY, button, dragX, dragY))) {
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        return dispatcher.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return dispatcher.mouseScrolled(mouseX, mouseY, scrollX, scrollY) || super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
